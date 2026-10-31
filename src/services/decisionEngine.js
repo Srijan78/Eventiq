@@ -216,10 +216,15 @@ export function runEngine(validatedRequest, referenceDate = new Date()) {
   for (const rule of profile.rules) {
     if (rule.applies(context)) {
       const output = rule.apply(context);
+      const effectText =
+        output.warnings && output.warnings.length > 0
+          ? output.warnings.join(' ')
+          : output.effect || `Applied ${rule.description}.`;
+
       firedRules.push({
         id: rule.id,
         description: rule.description,
-        effect: output.warnings ? output.warnings.join(' ') : 'Applied contextual plan adjustments.',
+        effect: effectText,
       });
 
       if (output.allocationShifts) {
@@ -246,10 +251,15 @@ export function runEngine(validatedRequest, referenceDate = new Date()) {
   for (const rule of SHARED_RULES) {
     if (rule.applies(context)) {
       const output = rule.apply(context);
+      const effectText =
+        output.warnings && output.warnings.length > 0
+          ? output.warnings.join(' ')
+          : output.effect || `Enforced ${rule.description}.`;
+
       firedRules.push({
         id: rule.id,
         description: rule.description,
-        effect: output.warnings ? output.warnings.join(' ') : 'Universal planning rule evaluated.',
+        effect: effectText,
       });
 
       if (output.allocationShifts) {
