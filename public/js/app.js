@@ -16,7 +16,7 @@ import { renderPlan } from './ui.js';
  */
 function createFeedbackController(loadingRegion, globalErrorBox) {
   return {
-    showLoading(msg = 'Generating your customized event plan...') {
+    showLoading(msg = 'Generating your event plan. This may take up to 15 seconds...') {
       if (loadingRegion) {
         loadingRegion.textContent = msg;
         loadingRegion.hidden = false;
@@ -51,9 +51,11 @@ function createFeedbackController(loadingRegion, globalErrorBox) {
  * @param {ReturnType<typeof createFeedbackController>} feedback
  */
 function bindFormSubmit(form, resultsContainer, restoreNoticeBox, feedback) {
+  let isSubmitting = false;
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!validateClientForm(form)) {
+    if (isSubmitting || !validateClientForm(form)) {
       return;
     }
 
@@ -61,10 +63,14 @@ function bindFormSubmit(form, resultsContainer, restoreNoticeBox, feedback) {
     const submitBtn = form.querySelector('button[type="submit"]');
 
     try {
-      feedback.showLoading('Calculating budget math, timeline, and vendor checklists...');
+      isSubmitting = true;
       if (submitBtn) {
         submitBtn.disabled = true;
+        submitBtn.setAttribute('aria-busy', 'true');
       }
+      feedback.showLoading(
+        'Generating your customized event plan with AI. This may take up to 15 seconds...',
+      );
 
       const plan = await postPlan(requestPayload);
       if (restoreNoticeBox) {
@@ -78,9 +84,11 @@ function bindFormSubmit(form, resultsContainer, restoreNoticeBox, feedback) {
         err.message || 'Failed to generate plan. Please verify your inputs and retry.',
       );
     } finally {
+      isSubmitting = false;
       feedback.hideLoading();
       if (submitBtn) {
         submitBtn.disabled = false;
+        submitBtn.removeAttribute('aria-busy');
       }
     }
   });
