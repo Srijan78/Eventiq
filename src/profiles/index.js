@@ -43,5 +43,3 @@ export function getProfile(eventType) {
 export function getAllProfiles() {
   return [weddingProfile, birthdayProfile, communityProfile, genericProfile];
 }
-
-export { weddingProfile, birthdayProfile, communityProfile, genericProfile };

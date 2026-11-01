@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview In-memory LRU Cache with TTL and canonical SHA-256 key hashing (Section 9.7).
  */
@@ -6,8 +7,8 @@ import { createHash } from 'node:crypto';
 import { ENV } from '../config/env.js';
 import { CONSTANTS } from '../config/constants.js';
 
-export const PROMPT_VERSION = '1.0.0';
-export const PROFILE_VERSION = '1.0.0';
+const PROMPT_VERSION = '1.0.0';
+const PROFILE_VERSION = '1.0.0';
 
 /**
  * Deeply sorts object keys alphabetically to produce canonical JSON.
@@ -40,7 +41,7 @@ function canonicalize(obj) {
 /**
  * Normalizes wedding specific properties for canonical cache key.
  *
- * @param {object|undefined} wedding
+ * @param {any} wedding
  * @returns {object|undefined}
  */
 function normalizeWedding(wedding) {
@@ -57,7 +58,7 @@ function normalizeWedding(wedding) {
 /**
  * Normalizes community specific properties for canonical cache key.
  *
- * @param {object|undefined} community
+ * @param {any} community
  * @returns {object|undefined}
  */
 function normalizeCommunity(community) {
@@ -75,7 +76,7 @@ function normalizeCommunity(community) {
 /**
  * Normalizes request fields for canonical cache key computation.
  *
- * @param {object} req
+ * @param {any} req
  * @returns {object}
  */
 function normalizeRequestForCache(req) {
