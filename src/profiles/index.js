@@ -4,10 +4,10 @@
  * without branching on eventType.
  */
 
-import { weddingProfile } from './wedding.js';
-import { birthdayProfile } from './birthday.js';
-import { communityProfile } from './community.js';
-import { genericProfile } from './generic.js';
+import { weddingProfile } from './wedding/index.js';
+import { birthdayProfile } from './birthday/index.js';
+import { communityProfile } from './community/index.js';
+import { genericProfile } from './generic/index.js';
 
 /**
  * Registry of available event profiles.
