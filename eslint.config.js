@@ -26,6 +26,7 @@ export default [
       'max-depth': ['error', 3],
       'max-params': ['error', 4],
       'max-lines-per-function': ['error', { max: 40, skipBlankLines: true, skipComments: true }],
+      'max-lines': ['warn', { max: 300, skipBlankLines: true, skipComments: true }],
       'consistent-return': 'error',
       'no-shadow': 'error',
       'no-param-reassign': 'error',
