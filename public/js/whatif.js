@@ -97,14 +97,28 @@ export function initWhatIfControls(plan, container, onRecalculated) {
 
   const desc = document.createElement('p');
   desc.className = 'whatif-desc';
-  desc.textContent = 'Adjust guest count or total budget below. Numbers and health feasibility recalculate deterministically with 0 latency.';
+  desc.textContent =
+    'Adjust guest count or total budget below. Numbers and health feasibility recalculate deterministically with 0 latency.';
   box.appendChild(desc);
 
   const controlsGrid = document.createElement('div');
   controlsGrid.className = 'whatif-grid';
 
-  const { group: guestGroup, input: guestInput } = createNumberControl('whatif-guests', 'Adjust Guests:', plan.request.guests, 1, 5000);
-  const { group: budgetGroup, input: budgetInput } = createNumberControl('whatif-budget', 'Adjust Total Budget (₹):', plan.request.budget, 1000, 100000000, 500);
+  const { group: guestGroup, input: guestInput } = createNumberControl(
+    'whatif-guests',
+    'Adjust Guests:',
+    plan.request.guests,
+    1,
+    5000,
+  );
+  const { group: budgetGroup, input: budgetInput } = createNumberControl(
+    'whatif-budget',
+    'Adjust Total Budget (₹):',
+    plan.request.budget,
+    1000,
+    100000000,
+    500,
+  );
 
   controlsGrid.appendChild(guestGroup);
   controlsGrid.appendChild(budgetGroup);
@@ -115,7 +129,13 @@ export function initWhatIfControls(plan, container, onRecalculated) {
   statusEl.setAttribute('role', 'status');
   box.appendChild(statusEl);
 
-  const debouncedHandler = createRecalculator(plan, guestInput, budgetInput, statusEl, onRecalculated);
+  const debouncedHandler = createRecalculator(
+    plan,
+    guestInput,
+    budgetInput,
+    statusEl,
+    onRecalculated,
+  );
   guestInput.addEventListener('input', debouncedHandler);
   budgetInput.addEventListener('input', debouncedHandler);
 

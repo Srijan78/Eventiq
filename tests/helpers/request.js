@@ -29,7 +29,9 @@ export function dispatchRequest(app, options = {}) {
 
       let bodyBuffer = null;
       if (options.body !== undefined && options.body !== null) {
-        bodyBuffer = Buffer.from(typeof options.body === 'string' ? options.body : JSON.stringify(options.body));
+        bodyBuffer = Buffer.from(
+          typeof options.body === 'string' ? options.body : JSON.stringify(options.body),
+        );
         req.headers['content-length'] = String(bodyBuffer.length);
         if (!req.headers['content-type']) {
           req.headers['content-type'] = 'application/json';

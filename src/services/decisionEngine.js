@@ -165,9 +165,12 @@ function buildPlanBudget(profile, totalBudget, baseAllocation, shifts, health, p
  */
 function buildPlanVendors(profile, eventDate, today, priorityFlags, weeksToEvent) {
   return profile.vendorCategories.map((vc) => {
-    const isPriority = priorityFlags.includes(vc.id) || weeksToEvent <= CONSTANTS.TIMELINE.URGENT_WEEKS;
+    const isPriority =
+      priorityFlags.includes(vc.id) || weeksToEvent <= CONSTANTS.TIMELINE.URGENT_WEEKS;
     const bookByDateObj = new Date(eventDate);
-    bookByDateObj.setDate(bookByDateObj.getDate() - Math.round(vc.bookWeeksBefore * CONSTANTS.TIMELINE.DAYS_PER_WEEK));
+    bookByDateObj.setDate(
+      bookByDateObj.getDate() - Math.round(vc.bookWeeksBefore * CONSTANTS.TIMELINE.DAYS_PER_WEEK),
+    );
     const bookByDate = bookByDateObj < today ? formatDate(today) : formatDate(bookByDateObj);
 
     return {
@@ -205,7 +208,8 @@ function selectTopRisks(risks) {
       id: 'budget-overrun',
       title: 'Unbudgeted Overtime & Incidental Expenses',
       severity: CONSTANTS.SEVERITY.LOW,
-      mitigation: 'Keep the 5%+ contingency fund untouched until event day for sudden extra supplies.',
+      mitigation:
+        'Keep the 5%+ contingency fund untouched until event day for sudden extra supplies.',
     });
   }
   return sorted;
@@ -241,9 +245,27 @@ export function runEngine(validatedRequest, referenceDate = new Date()) {
     state.evaluatedHealth = computeHealth(context.perGuest, context.costLevel, context.bands);
   }
 
-  const budget = buildPlanBudget(profile, validatedRequest.budget, activeAllocation, state.accumulatedShifts, state.evaluatedHealth, context.perGuest);
-  const timeline = buildTimeline(profile.timelineMilestones, validatedRequest.eventDate, context.today, state.extraTasks);
-  const vendors = buildPlanVendors(profile, context.eventDate, context.today, state.priorityFlags, context.weeksToEvent);
+  const budget = buildPlanBudget(
+    profile,
+    validatedRequest.budget,
+    activeAllocation,
+    state.accumulatedShifts,
+    state.evaluatedHealth,
+    context.perGuest,
+  );
+  const timeline = buildTimeline(
+    profile.timelineMilestones,
+    validatedRequest.eventDate,
+    context.today,
+    state.extraTasks,
+  );
+  const vendors = buildPlanVendors(
+    profile,
+    context.eventDate,
+    context.today,
+    state.priorityFlags,
+    context.weeksToEvent,
+  );
   const risks = selectTopRisks(state.risks);
 
   return {

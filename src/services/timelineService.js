@@ -82,7 +82,12 @@ function mergeDuplicateDates(milestones) {
  * @param {Array<{ milestoneId: string, title: string, detail: string }>} [extraTasks=[]] - Injected tasks
  * @returns {Array<{ id: string, label: string, dueDate: string, weeksLeft: number, urgent: boolean, tasks: Array<{ title: string, detail: string }> }>}
  */
-export function buildTimeline(profileMilestones, eventDateStr, todayDate = new Date(), extraTasks = []) {
+export function buildTimeline(
+  profileMilestones,
+  eventDateStr,
+  todayDate = new Date(),
+  extraTasks = [],
+) {
   const today = toMidnight(todayDate);
   const eventDate = toMidnight(eventDateStr);
 
@@ -91,7 +96,9 @@ export function buildTimeline(profileMilestones, eventDateStr, todayDate = new D
 
   for (const m of profileMilestones) {
     const dueDate = new Date(eventDate);
-    dueDate.setDate(dueDate.getDate() - Math.round(m.weeksBefore * CONSTANTS.TIMELINE.DAYS_PER_WEEK));
+    dueDate.setDate(
+      dueDate.getDate() - Math.round(m.weeksBefore * CONSTANTS.TIMELINE.DAYS_PER_WEEK),
+    );
     const tasks = resolveMilestoneTasks(m.id, m.label, extraTasks);
 
     if (dueDate < today) {

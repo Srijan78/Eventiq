@@ -42,7 +42,10 @@ async function executeWithRetry(
     } catch (err) {
       attempt++;
       if (attempt > maxRetries) {
-        logger.error({ taskName, attempts: attempt, err: err.message }, 'Gemini task failed after max retries');
+        logger.error(
+          { taskName, attempts: attempt, err: err.message },
+          'Gemini task failed after max retries',
+        );
         throw err;
       }
 
@@ -87,9 +90,12 @@ export function createGeminiService(apiKey, modelName = CONSTANTS.GEMINI.DEFAULT
       try {
         parsedJson = JSON.parse(rawText);
       } catch (parseErr) {
-        throw new Error(`Gemini returned invalid non-JSON output for ${callName}: ${parseErr.message}`, {
-          cause: parseErr,
-        });
+        throw new Error(
+          `Gemini returned invalid non-JSON output for ${callName}: ${parseErr.message}`,
+          {
+            cause: parseErr,
+          },
+        );
       }
 
       // Strict validation against Zod schema

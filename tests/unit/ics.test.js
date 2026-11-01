@@ -7,9 +7,7 @@ test('generateIcs: formats valid RFC 5545 iCalendar data with escaped characters
     {
       label: 'Book Wedding Hall; Pay Deposit',
       dueDate: '2027-02-15',
-      tasks: [
-        { title: 'Visit Venue', detail: 'Inspect acoustics, lighting & restrooms.' },
-      ],
+      tasks: [{ title: 'Visit Venue', detail: 'Inspect acoustics, lighting & restrooms.' }],
     },
     {
       label: 'Finalize Menu, Tastings',
@@ -47,4 +45,3 @@ test('googleCalendarUrl: constructs valid URL with encoded parameters', () => {
   assert.ok(url.includes('Annual%20Gala%3A%20Lock%20Caterer'));
   assert.ok(url.includes('Verify%20vegetarian%20menu'));
 });
-

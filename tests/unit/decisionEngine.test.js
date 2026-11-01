@@ -53,7 +53,11 @@ test('decisionEngine: parametric evaluation across all event profiles produces v
 
     // 1. Budget reconciliation invariant
     const sum = plan.budget.categories.reduce((acc, c) => acc + c.amount, 0);
-    assert.equal(sum, req.budget, `Sum invariant failed for ${req.eventType}: ${sum} !== ${req.budget}`);
+    assert.equal(
+      sum,
+      req.budget,
+      `Sum invariant failed for ${req.eventType}: ${sum} !== ${req.budget}`,
+    );
 
     // 2. Budget health exists
     assert.ok(plan.budget.health.level);

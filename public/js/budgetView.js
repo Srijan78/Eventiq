@@ -14,7 +14,11 @@ import { initWhatIfControls } from './whatif.js';
 export function buildHealthMeter(health) {
   const healthBox = el('div', `health-meter health-${health.level}`);
   const healthHeader = el('div', 'health-header');
-  const healthLabel = el('span', 'health-label', `Budget Feasibility: ${health.level.toUpperCase()}`);
+  const healthLabel = el(
+    'span',
+    'health-label',
+    `Budget Feasibility: ${health.level.toUpperCase()}`,
+  );
   healthHeader.appendChild(healthLabel);
 
   const healthReason = el('p', 'health-reason', health.reason);
@@ -32,7 +36,13 @@ export function buildHealthMeter(health) {
 export function buildBudgetTable(categories) {
   const tableWrapper = el('div', 'table-wrapper');
   const table = el('table', 'budget-table');
-  table.appendChild(el('caption', 'sr-only', 'Detailed event budget distribution with exact rupee allocations and rationale'));
+  table.appendChild(
+    el(
+      'caption',
+      'sr-only',
+      'Detailed event budget distribution with exact rupee allocations and rationale',
+    ),
+  );
 
   const thead = el('thead');
   const headerRow = el('tr');
@@ -141,12 +151,20 @@ export function renderBudget(budget, container, plan) {
   const statsBar = el('div', 'budget-stats-bar');
   const stat1 = el('div', 'stat-card');
   stat1.appendChild(el('span', 'stat-label', 'Total Budget'));
-  const statTotal = el('span', 'stat-value stat-total-val', `₹${budget.total.toLocaleString('en-IN')}`);
+  const statTotal = el(
+    'span',
+    'stat-value stat-total-val',
+    `₹${budget.total.toLocaleString('en-IN')}`,
+  );
   stat1.appendChild(statTotal);
 
   const stat2 = el('div', 'stat-card');
   stat2.appendChild(el('span', 'stat-label', 'Spend per Guest'));
-  const statGuest = el('span', 'stat-value stat-guest-val', `₹${budget.perGuest.toLocaleString('en-IN')}`);
+  const statGuest = el(
+    'span',
+    'stat-value stat-guest-val',
+    `₹${budget.perGuest.toLocaleString('en-IN')}`,
+  );
   stat2.appendChild(statGuest);
 
   const stat3 = el('div', 'stat-card');

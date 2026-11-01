@@ -31,15 +31,23 @@ export function reconcile(totalBudget, allocationPcts) {
   }
 
   // Ensure contingency exists and has at least the floor percentage
-  if (!normalizedPcts.contingency || normalizedPcts.contingency < CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT) {
+  if (
+    !normalizedPcts.contingency ||
+    normalizedPcts.contingency < CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT
+  ) {
     const deficit = CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT - (normalizedPcts.contingency || 0);
     normalizedPcts.contingency = CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT;
     // Deduct deficit proportionally from other categories with positive allocation
-    const others = Object.keys(normalizedPcts).filter((k) => k !== 'contingency' && normalizedPcts[k] > 0);
+    const others = Object.keys(normalizedPcts).filter(
+      (k) => k !== 'contingency' && normalizedPcts[k] > 0,
+    );
     const otherSum = others.reduce((acc, k) => acc + normalizedPcts[k], 0);
     if (otherSum > 0) {
       for (const k of others) {
-        normalizedPcts[k] = Math.max(0, normalizedPcts[k] - (deficit * normalizedPcts[k]) / otherSum);
+        normalizedPcts[k] = Math.max(
+          0,
+          normalizedPcts[k] - (deficit * normalizedPcts[k]) / otherSum,
+        );
       }
     }
   }

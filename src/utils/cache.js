@@ -55,7 +55,9 @@ export function buildCacheKey(
     notes: (req.notes || '').trim(),
     wedding: req.wedding
       ? {
-          functions: (req.wedding.functions || []).map((f) => String(f).toLowerCase().trim()).sort(),
+          functions: (req.wedding.functions || [])
+            .map((f) => String(f).toLowerCase().trim())
+            .sort(),
           indoor: Boolean(req.wedding.indoor),
           dietary: (req.wedding.dietary || '').toLowerCase().trim(),
         }
@@ -172,4 +174,3 @@ export class LruCache {
 }
 
 export const planCache = new LruCache();
-

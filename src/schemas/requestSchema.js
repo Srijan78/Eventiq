@@ -57,7 +57,12 @@ const birthdayDetailsSchema = z
 const communityDetailsSchema = z
   .object({
     expectedCrowd: z.coerce.number().int().min(1).max(50000).optional(),
-    sponsorshipTarget: z.coerce.number().int().min(0).max(CONSTANTS.VALIDATION.BUDGET_MAX).default(0),
+    sponsorshipTarget: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(CONSTANTS.VALIDATION.BUDGET_MAX)
+      .default(0),
     indoor: z.boolean().default(false),
     isPublic: z.boolean().default(true),
   })
@@ -75,18 +80,59 @@ export const requestSchema = z
     guests: z.coerce
       .number({ invalid_type_error: 'Guest count must be a number' })
       .int('Guest count must be an integer')
-      .min(CONSTANTS.VALIDATION.GUEST_MIN, `Guest count must be at least ${CONSTANTS.VALIDATION.GUEST_MIN}`)
-      .max(CONSTANTS.VALIDATION.GUEST_MAX, `Guest count cannot exceed ${CONSTANTS.VALIDATION.GUEST_MAX}`),
+      .min(
+        CONSTANTS.VALIDATION.GUEST_MIN,
+        `Guest count must be at least ${CONSTANTS.VALIDATION.GUEST_MIN}`,
+      )
+      .max(
+        CONSTANTS.VALIDATION.GUEST_MAX,
+        `Guest count cannot exceed ${CONSTANTS.VALIDATION.GUEST_MAX}`,
+      ),
     budget: z.coerce
       .number({ invalid_type_error: 'Budget must be a number' })
       .int('Budget must be an integer')
-      .min(CONSTANTS.VALIDATION.BUDGET_MIN, `Budget must be at least ₹${CONSTANTS.VALIDATION.BUDGET_MIN}`)
-      .max(CONSTANTS.VALIDATION.BUDGET_MAX, `Budget cannot exceed ₹${CONSTANTS.VALIDATION.BUDGET_MAX}`),
-    city: z.string().trim().max(CONSTANTS.VALIDATION.CITY_MAX_LENGTH, `City name cannot exceed ${CONSTANTS.VALIDATION.CITY_MAX_LENGTH} characters`).default(''),
+      .min(
+        CONSTANTS.VALIDATION.BUDGET_MIN,
+        `Budget must be at least ₹${CONSTANTS.VALIDATION.BUDGET_MIN}`,
+      )
+      .max(
+        CONSTANTS.VALIDATION.BUDGET_MAX,
+        `Budget cannot exceed ₹${CONSTANTS.VALIDATION.BUDGET_MAX}`,
+      ),
+    city: z
+      .string()
+      .trim()
+      .max(
+        CONSTANTS.VALIDATION.CITY_MAX_LENGTH,
+        `City name cannot exceed ${CONSTANTS.VALIDATION.CITY_MAX_LENGTH} characters`,
+      )
+      .default(''),
     costLevel: z.enum(['low', 'average', 'high']).default('average'),
-    theme: z.string().trim().max(CONSTANTS.VALIDATION.THEME_MAX_LENGTH, `Theme cannot exceed ${CONSTANTS.VALIDATION.THEME_MAX_LENGTH} characters`).default(''),
-    notes: z.string().trim().max(CONSTANTS.VALIDATION.NOTES_MAX_LENGTH, `Notes cannot exceed ${CONSTANTS.VALIDATION.NOTES_MAX_LENGTH} characters`).default(''),
-    eventName: z.string().trim().max(CONSTANTS.VALIDATION.EVENT_NAME_MAX_LENGTH, `Event name cannot exceed ${CONSTANTS.VALIDATION.EVENT_NAME_MAX_LENGTH} characters`).optional().default(''),
+    theme: z
+      .string()
+      .trim()
+      .max(
+        CONSTANTS.VALIDATION.THEME_MAX_LENGTH,
+        `Theme cannot exceed ${CONSTANTS.VALIDATION.THEME_MAX_LENGTH} characters`,
+      )
+      .default(''),
+    notes: z
+      .string()
+      .trim()
+      .max(
+        CONSTANTS.VALIDATION.NOTES_MAX_LENGTH,
+        `Notes cannot exceed ${CONSTANTS.VALIDATION.NOTES_MAX_LENGTH} characters`,
+      )
+      .default(''),
+    eventName: z
+      .string()
+      .trim()
+      .max(
+        CONSTANTS.VALIDATION.EVENT_NAME_MAX_LENGTH,
+        `Event name cannot exceed ${CONSTANTS.VALIDATION.EVENT_NAME_MAX_LENGTH} characters`,
+      )
+      .optional()
+      .default(''),
     wedding: weddingDetailsSchema,
     birthday: birthdayDetailsSchema,
     community: communityDetailsSchema,

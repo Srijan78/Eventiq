@@ -23,7 +23,10 @@ export const vendorGuidanceResponseSchema = z.object({
  */
 export function buildVendorPrompt(engineResult, req) {
   const vendorList = engineResult.vendors
-    .map((v) => `- Category ID: "${v.categoryId}", Service: "${v.label}", Priority: "${v.priority}", Book By: ${v.bookByDate}`)
+    .map(
+      (v) =>
+        `- Category ID: "${v.categoryId}", Service: "${v.label}", Priority: "${v.priority}", Book By: ${v.bookByDate}`,
+    )
     .join('\n');
 
   const systemInstruction = `You are Eventiq, a contract negotiation and vendor management specialist.
@@ -74,4 +77,3 @@ Generate 2 sharp interview questions and 2 contract red flags for each vendor ca
     responseSchema: vendorGuidanceResponseSchema,
   };
 }
-

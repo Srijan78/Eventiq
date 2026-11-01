@@ -108,7 +108,8 @@ export function errorHandler(err, req, res, _next) {
     return res.status(503).json({
       error: {
         code: 'UPSTREAM_UNAVAILABLE',
-        message: 'The AI planning service is temporarily unavailable. Please retry or use offline mode.',
+        message:
+          'The AI planning service is temporarily unavailable. Please retry or use offline mode.',
         details: [],
         requestId,
       },
@@ -116,7 +117,10 @@ export function errorHandler(err, req, res, _next) {
   }
 
   // 6. Generic Internal Server Errors
-  logger.error({ requestId, err: err.message, stack: err.stack }, 'Unhandled internal server error');
+  logger.error(
+    { requestId, err: err.message, stack: err.stack },
+    'Unhandled internal server error',
+  );
   return res.status(500).json({
     error: {
       code: 'INTERNAL_ERROR',
@@ -126,4 +130,3 @@ export function errorHandler(err, req, res, _next) {
     },
   });
 }
-

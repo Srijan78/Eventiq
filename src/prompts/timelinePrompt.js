@@ -8,12 +8,14 @@ export const timelineTasksResponseSchema = z.object({
   timelineTasks: z.array(
     z.object({
       milestoneId: z.string(),
-      tasks: z.array(
-        z.object({
-          title: z.string().min(1),
-          detail: z.string().min(1),
-        }),
-      ).min(1),
+      tasks: z
+        .array(
+          z.object({
+            title: z.string().min(1),
+            detail: z.string().min(1),
+          }),
+        )
+        .min(1),
     }),
   ),
 });
@@ -27,7 +29,10 @@ export const timelineTasksResponseSchema = z.object({
  */
 export function buildTimelinePrompt(engineResult, req) {
   const milestonesList = engineResult.timeline
-    .map((m) => `- Milestone ID: "${m.id}", Label: "${m.label}", Due Date: ${m.dueDate} (${m.weeksLeft} weeks left, Urgent: ${m.urgent})`)
+    .map(
+      (m) =>
+        `- Milestone ID: "${m.id}", Label: "${m.label}", Due Date: ${m.dueDate} (${m.weeksLeft} weeks left, Urgent: ${m.urgent})`,
+    )
     .join('\n');
 
   const systemInstruction = `You are Eventiq, a structured operational planning assistant.
@@ -74,4 +79,3 @@ Generate 1-2 distinct, actionable tasks for each milestone ID listed above.`;
     responseSchema: timelineTasksResponseSchema,
   };
 }
-

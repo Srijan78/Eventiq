@@ -1,242 +1,369 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Eventiq - GenAI-powered planning assistant for weddings, birthdays, community, and bespoke events with strict budget math, timelines, and vendor checklists.">
-  <title>Eventiq | Context-Aware Event Planning Assistant</title>
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <!-- Skip to Main Content Link for Keyboard Accessibility -->
-  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Eventiq - GenAI-powered planning assistant for weddings, birthdays, community, and bespoke events with strict budget math, timelines, and vendor checklists."
+    />
+    <title>Eventiq | Context-Aware Event Planning Assistant</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <!-- Skip to Main Content Link for Keyboard Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <header class="app-header">
-    <div class="header-inner container">
-      <div class="brand">
-        <h1 class="brand-title">Eventiq</h1>
-        <p class="brand-tagline">GenAI-Powered Context-Aware Event Planning Assistant</p>
-      </div>
-      <div class="header-badges">
-        <span class="badge badge-accent">Mathematical Invariant Guaranteed</span>
-        <span class="badge badge-success">Offline Ready</span>
-      </div>
-    </div>
-  </header>
-
-  <main id="main-content" class="container layout-grid">
-    <!-- Left Column / Top Section: Intake Form -->
-    <section id="intake-section" class="intake-panel" aria-labelledby="intake-heading">
-      <h2 id="intake-heading" class="panel-title">Plan Your Event</h2>
-      <p class="panel-subtitle">Enter your event details to generate a comprehensive budget, milestone schedule, and vendor due-diligence checklist.</p>
-
-      <!-- Restore Session Banner (FR-36) -->
-      <div id="restore-notice" class="restore-banner" role="status" hidden></div>
-
-      <!-- Live Loading Indicator -->
-      <div id="loading-indicator" class="loading-box" aria-live="polite" hidden></div>
-
-      <!-- Global Error Notification -->
-      <div id="global-error" class="error-banner" role="alert" tabindex="-1" hidden></div>
-
-      <form id="plan-form" class="plan-form" novalidate>
-        <!-- Common Event Basics -->
-        <fieldset class="form-fieldset">
-          <legend class="fieldset-legend">Event Fundamentals</legend>
-
-          <div class="form-group">
-            <label for="field-event-type" class="form-label">Event Type <span class="required" aria-hidden="true">*</span></label>
-            <select id="field-event-type" name="eventType" class="form-control" required aria-describedby="field-event-type-error">
-              <option value="wedding">Wedding</option>
-              <option value="birthday">Birthday Party</option>
-              <option value="community">Community Event / Festival</option>
-              <option value="other">Other (Custom Event)</option>
-            </select>
-            <span id="field-event-type-error" class="field-error" hidden></span>
-          </div>
-
-          <!-- Dynamic Other Field: Event Name -->
-          <div id="fields-other" class="form-group" hidden>
-            <label for="field-event-name" class="form-label">Event Name <span class="required" aria-hidden="true">*</span></label>
-            <input type="text" id="field-event-name" name="eventName" class="form-control" maxlength="60" placeholder="e.g. Corporate Offsite, Baby Shower" aria-describedby="field-event-name-error">
-            <span id="field-event-name-error" class="field-error" hidden></span>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="field-date" class="form-label">Event Date <span class="required" aria-hidden="true">*</span></label>
-              <input type="date" id="field-date" name="eventDate" class="form-control" required aria-describedby="field-date-error">
-              <span id="field-date-error" class="field-error" hidden></span>
-            </div>
-
-            <div class="form-group">
-              <label for="field-guests" class="form-label">Guest Count <span class="required" aria-hidden="true">*</span></label>
-              <input type="number" id="field-guests" name="guests" class="form-control" min="1" max="5000" placeholder="e.g. 150" required aria-describedby="field-guests-error">
-              <span id="field-guests-error" class="field-error" hidden></span>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="field-budget" class="form-label">Total Budget (₹ INR) <span class="required" aria-hidden="true">*</span></label>
-              <input type="number" id="field-budget" name="budget" class="form-control" min="1000" max="100000000" step="500" placeholder="e.g. 500000" required aria-describedby="field-budget-error">
-              <span id="field-budget-error" class="field-error" hidden></span>
-            </div>
-
-            <div class="form-group">
-              <label for="field-cost-level" class="form-label">Regional Cost Level</label>
-              <select id="field-cost-level" name="costLevel" class="form-control">
-                <option value="low">Low Cost Tier (0.8x spend scale)</option>
-                <option value="average" selected>Average Cost Tier (Standard 1.0x)</option>
-                <option value="high">High Cost Tier (Metropolitan 1.3x)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="field-city" class="form-label">City / Destination</label>
-              <input type="text" id="field-city" name="city" class="form-control" maxlength="80" placeholder="e.g. Jaipur, Bengaluru, Mumbai">
-            </div>
-
-            <div class="form-group">
-              <label for="field-theme" class="form-label">Desired Theme / Aesthetic</label>
-              <input type="text" id="field-theme" name="theme" class="form-control" maxlength="80" placeholder="e.g. Royal Traditional, Boho Pastel">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="field-notes" class="form-label">Special Preferences or Notes (Max 500 chars)</label>
-            <textarea id="field-notes" name="notes" class="form-control" maxlength="500" rows="3" placeholder="e.g. Strictly vegetarian food, need quiet zone for seniors..."></textarea>
-          </div>
-        </fieldset>
-
-        <!-- Dynamic Wedding Fieldset -->
-        <fieldset id="fields-wedding" class="form-fieldset">
-          <legend class="fieldset-legend">Wedding Specifics</legend>
-
-          <div class="form-group">
-            <span class="form-label">Ceremonies Included:</span>
-            <div class="checkbox-grid">
-              <label class="checkbox-label">
-                <input type="checkbox" name="weddingFunctions" value="haldi">
-                <span>Haldi</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="weddingFunctions" value="mehendi">
-                <span>Mehendi</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="weddingFunctions" value="sangeet">
-                <span>Sangeet</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="weddingFunctions" value="wedding" checked>
-                <span>Wedding Ritual</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="weddingFunctions" value="reception" checked>
-                <span>Reception Banquet</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="field-wedding-indoor" class="form-label">Venue Setting</label>
-              <select id="field-wedding-indoor" name="weddingIndoor" class="form-control">
-                <option value="true" selected>Indoor Banquet / Hall</option>
-                <option value="false">Outdoor Lawn / Courtyard</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="field-wedding-dietary" class="form-label">Dietary & Regional Menu</label>
-              <input type="text" id="field-wedding-dietary" name="weddingDietary" class="form-control" maxlength="200" placeholder="e.g. Pure Vegetarian, Jain counters">
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- Dynamic Birthday Fieldset -->
-        <fieldset id="fields-birthday" class="form-fieldset" hidden>
-          <legend class="fieldset-legend">Birthday Details</legend>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="field-birthday-age" class="form-label">Age of Guest of Honor</label>
-              <input type="number" id="field-birthday-age" name="birthdayAge" class="form-control" min="1" max="120" placeholder="e.g. 7, 21, 50">
-            </div>
-
-            <div class="form-group">
-              <label for="field-birthday-surprise" class="form-label">Surprise Celebration?</label>
-              <select id="field-birthday-surprise" name="birthdaySurprise" class="form-control">
-                <option value="false" selected>No, standard party</option>
-                <option value="true">Yes, Surprise Party!</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="field-birthday-indoor" class="form-label">Venue Setting</label>
-            <select id="field-birthday-indoor" name="birthdayIndoor" class="form-control">
-              <option value="true" selected>Indoor Home / Party Room</option>
-              <option value="false">Outdoor Park / Backyard</option>
-            </select>
-          </div>
-        </fieldset>
-
-        <!-- Dynamic Community Fieldset -->
-        <fieldset id="fields-community" class="form-fieldset" hidden>
-          <legend class="fieldset-legend">Community Gathering Details</legend>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="field-community-crowd" class="form-label">Expected Footfall / Crowd</label>
-              <input type="number" id="field-community-crowd" name="communityCrowd" class="form-control" min="1" max="50000" placeholder="e.g. 800">
-            </div>
-
-            <div class="form-group">
-              <label for="field-community-sponsorship" class="form-label">Sponsorship Target (₹ INR)</label>
-              <input type="number" id="field-community-sponsorship" name="communitySponsorship" class="form-control" min="0" max="100000000" placeholder="e.g. 100000">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="field-community-public" class="form-label">Event Nature</label>
-              <select id="field-community-public" name="communityPublic" class="form-control">
-                <option value="true" selected>Public Open Gathering</option>
-                <option value="false">Private Community / Society Only</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="field-community-indoor" class="form-label">Venue Setting</label>
-              <select id="field-community-indoor" name="communityIndoor" class="form-control">
-                <option value="false" selected>Outdoor Open Grounds</option>
-                <option value="true">Indoor Auditorium / Hall</option>
-              </select>
-            </div>
-          </div>
-        </fieldset>
-
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary btn-block">Generate Complete Event Plan</button>
+    <header class="app-header">
+      <div class="header-inner container">
+        <div class="brand">
+          <h1 class="brand-title">Eventiq</h1>
+          <p class="brand-tagline">GenAI-Powered Context-Aware Event Planning Assistant</p>
         </div>
-      </form>
-    </section>
+        <div class="header-badges">
+          <span class="badge badge-accent">Mathematical Invariant Guaranteed</span>
+          <span class="badge badge-success">Offline Ready</span>
+        </div>
+      </div>
+    </header>
 
-    <!-- Right Column / Bottom Section: Results Container -->
-    <div id="results-container" class="results-panel" hidden></div>
-  </main>
+    <main id="main-content" class="container layout-grid">
+      <!-- Left Column / Top Section: Intake Form -->
+      <section id="intake-section" class="intake-panel" aria-labelledby="intake-heading">
+        <h2 id="intake-heading" class="panel-title">Plan Your Event</h2>
+        <p class="panel-subtitle">
+          Enter your event details to generate a comprehensive budget, milestone schedule, and
+          vendor due-diligence checklist.
+        </p>
 
-  <footer class="app-footer">
-    <div class="container footer-inner">
-      <p>&copy; 2026 Eventiq. Built with PromptWars AI Code approach. Single branch architecture. WCAG 2.1 AA Compliant.</p>
-      <p class="footer-note">All budget calculations are deterministic. Rupee sum strictly equals input budget.</p>
-    </div>
-  </footer>
+        <!-- Restore Session Banner (FR-36) -->
+        <div id="restore-notice" class="restore-banner" role="status" hidden></div>
 
-  <script type="module" src="js/app.js"></script>
-</body>
+        <!-- Live Loading Indicator -->
+        <div id="loading-indicator" class="loading-box" aria-live="polite" hidden></div>
+
+        <!-- Global Error Notification -->
+        <div id="global-error" class="error-banner" role="alert" tabindex="-1" hidden></div>
+
+        <form id="plan-form" class="plan-form" novalidate>
+          <!-- Common Event Basics -->
+          <fieldset class="form-fieldset">
+            <legend class="fieldset-legend">Event Fundamentals</legend>
+
+            <div class="form-group">
+              <label for="field-event-type" class="form-label"
+                >Event Type <span class="required" aria-hidden="true">*</span></label
+              >
+              <select
+                id="field-event-type"
+                name="eventType"
+                class="form-control"
+                required
+                aria-describedby="field-event-type-error"
+              >
+                <option value="wedding">Wedding</option>
+                <option value="birthday">Birthday Party</option>
+                <option value="community">Community Event / Festival</option>
+                <option value="other">Other (Custom Event)</option>
+              </select>
+              <span id="field-event-type-error" class="field-error" hidden></span>
+            </div>
+
+            <!-- Dynamic Other Field: Event Name -->
+            <div id="fields-other" class="form-group" hidden>
+              <label for="field-event-name" class="form-label"
+                >Event Name <span class="required" aria-hidden="true">*</span></label
+              >
+              <input
+                type="text"
+                id="field-event-name"
+                name="eventName"
+                class="form-control"
+                maxlength="60"
+                placeholder="e.g. Corporate Offsite, Baby Shower"
+                aria-describedby="field-event-name-error"
+              />
+              <span id="field-event-name-error" class="field-error" hidden></span>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="field-date" class="form-label"
+                  >Event Date <span class="required" aria-hidden="true">*</span></label
+                >
+                <input
+                  type="date"
+                  id="field-date"
+                  name="eventDate"
+                  class="form-control"
+                  required
+                  aria-describedby="field-date-error"
+                />
+                <span id="field-date-error" class="field-error" hidden></span>
+              </div>
+
+              <div class="form-group">
+                <label for="field-guests" class="form-label"
+                  >Guest Count <span class="required" aria-hidden="true">*</span></label
+                >
+                <input
+                  type="number"
+                  id="field-guests"
+                  name="guests"
+                  class="form-control"
+                  min="1"
+                  max="5000"
+                  placeholder="e.g. 150"
+                  required
+                  aria-describedby="field-guests-error"
+                />
+                <span id="field-guests-error" class="field-error" hidden></span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="field-budget" class="form-label"
+                  >Total Budget (₹ INR) <span class="required" aria-hidden="true">*</span></label
+                >
+                <input
+                  type="number"
+                  id="field-budget"
+                  name="budget"
+                  class="form-control"
+                  min="1000"
+                  max="100000000"
+                  step="500"
+                  placeholder="e.g. 500000"
+                  required
+                  aria-describedby="field-budget-error"
+                />
+                <span id="field-budget-error" class="field-error" hidden></span>
+              </div>
+
+              <div class="form-group">
+                <label for="field-cost-level" class="form-label">Regional Cost Level</label>
+                <select id="field-cost-level" name="costLevel" class="form-control">
+                  <option value="low">Low Cost Tier (0.8x spend scale)</option>
+                  <option value="average" selected>Average Cost Tier (Standard 1.0x)</option>
+                  <option value="high">High Cost Tier (Metropolitan 1.3x)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="field-city" class="form-label">City / Destination</label>
+                <input
+                  type="text"
+                  id="field-city"
+                  name="city"
+                  class="form-control"
+                  maxlength="80"
+                  placeholder="e.g. Jaipur, Bengaluru, Mumbai"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="field-theme" class="form-label">Desired Theme / Aesthetic</label>
+                <input
+                  type="text"
+                  id="field-theme"
+                  name="theme"
+                  class="form-control"
+                  maxlength="80"
+                  placeholder="e.g. Royal Traditional, Boho Pastel"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="field-notes" class="form-label"
+                >Special Preferences or Notes (Max 500 chars)</label
+              >
+              <textarea
+                id="field-notes"
+                name="notes"
+                class="form-control"
+                maxlength="500"
+                rows="3"
+                placeholder="e.g. Strictly vegetarian food, need quiet zone for seniors..."
+              ></textarea>
+            </div>
+          </fieldset>
+
+          <!-- Dynamic Wedding Fieldset -->
+          <fieldset id="fields-wedding" class="form-fieldset">
+            <legend class="fieldset-legend">Wedding Specifics</legend>
+
+            <div class="form-group">
+              <span class="form-label">Ceremonies Included:</span>
+              <div class="checkbox-grid">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="weddingFunctions" value="haldi" />
+                  <span>Haldi</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="weddingFunctions" value="mehendi" />
+                  <span>Mehendi</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="weddingFunctions" value="sangeet" />
+                  <span>Sangeet</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="weddingFunctions" value="wedding" checked />
+                  <span>Wedding Ritual</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="weddingFunctions" value="reception" checked />
+                  <span>Reception Banquet</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="field-wedding-indoor" class="form-label">Venue Setting</label>
+                <select id="field-wedding-indoor" name="weddingIndoor" class="form-control">
+                  <option value="true" selected>Indoor Banquet / Hall</option>
+                  <option value="false">Outdoor Lawn / Courtyard</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="field-wedding-dietary" class="form-label"
+                  >Dietary & Regional Menu</label
+                >
+                <input
+                  type="text"
+                  id="field-wedding-dietary"
+                  name="weddingDietary"
+                  class="form-control"
+                  maxlength="200"
+                  placeholder="e.g. Pure Vegetarian, Jain counters"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Dynamic Birthday Fieldset -->
+          <fieldset id="fields-birthday" class="form-fieldset" hidden>
+            <legend class="fieldset-legend">Birthday Details</legend>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="field-birthday-age" class="form-label">Age of Guest of Honor</label>
+                <input
+                  type="number"
+                  id="field-birthday-age"
+                  name="birthdayAge"
+                  class="form-control"
+                  min="1"
+                  max="120"
+                  placeholder="e.g. 7, 21, 50"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="field-birthday-surprise" class="form-label"
+                  >Surprise Celebration?</label
+                >
+                <select id="field-birthday-surprise" name="birthdaySurprise" class="form-control">
+                  <option value="false" selected>No, standard party</option>
+                  <option value="true">Yes, Surprise Party!</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="field-birthday-indoor" class="form-label">Venue Setting</label>
+              <select id="field-birthday-indoor" name="birthdayIndoor" class="form-control">
+                <option value="true" selected>Indoor Home / Party Room</option>
+                <option value="false">Outdoor Park / Backyard</option>
+              </select>
+            </div>
+          </fieldset>
+
+          <!-- Dynamic Community Fieldset -->
+          <fieldset id="fields-community" class="form-fieldset" hidden>
+            <legend class="fieldset-legend">Community Gathering Details</legend>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="field-community-crowd" class="form-label"
+                  >Expected Footfall / Crowd</label
+                >
+                <input
+                  type="number"
+                  id="field-community-crowd"
+                  name="communityCrowd"
+                  class="form-control"
+                  min="1"
+                  max="50000"
+                  placeholder="e.g. 800"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="field-community-sponsorship" class="form-label"
+                  >Sponsorship Target (₹ INR)</label
+                >
+                <input
+                  type="number"
+                  id="field-community-sponsorship"
+                  name="communitySponsorship"
+                  class="form-control"
+                  min="0"
+                  max="100000000"
+                  placeholder="e.g. 100000"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="field-community-public" class="form-label">Event Nature</label>
+                <select id="field-community-public" name="communityPublic" class="form-control">
+                  <option value="true" selected>Public Open Gathering</option>
+                  <option value="false">Private Community / Society Only</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="field-community-indoor" class="form-label">Venue Setting</label>
+                <select id="field-community-indoor" name="communityIndoor" class="form-control">
+                  <option value="false" selected>Outdoor Open Grounds</option>
+                  <option value="true">Indoor Auditorium / Hall</option>
+                </select>
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-block">
+              Generate Complete Event Plan
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Right Column / Bottom Section: Results Container -->
+      <div id="results-container" class="results-panel" hidden></div>
+    </main>
+
+    <footer class="app-footer">
+      <div class="container footer-inner">
+        <p>
+          &copy; 2026 Eventiq. Built with PromptWars AI Code approach. Single branch architecture.
+          WCAG 2.1 AA Compliant.
+        </p>
+        <p class="footer-note">
+          All budget calculations are deterministic. Rupee sum strictly equals input budget.
+        </p>
+      </div>
+    </footer>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
 </html>

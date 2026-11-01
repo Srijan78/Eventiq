@@ -82,4 +82,3 @@ export async function postExportIcs(exportData) {
     body: JSON.stringify(exportData),
   });
 }
-

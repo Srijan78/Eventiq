@@ -25,8 +25,12 @@ router.get('/health', (_req, res) => {
 router.post('/api/plan', llmLimiter, validate(requestSchema), planController.create);
 
 // Deterministic What-if scenario recalculation
-router.post('/api/plan/whatif', generalLimiter, validate(requestSchema), whatifController.recalculate);
+router.post(
+  '/api/plan/whatif',
+  generalLimiter,
+  validate(requestSchema),
+  whatifController.recalculate,
+);
 
 // iCalendar (.ics) export
 router.post('/api/export/ics', generalLimiter, exportController.exportIcs);
-

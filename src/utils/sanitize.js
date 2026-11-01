@@ -21,11 +21,7 @@ export function sanitize(input, maxLength = 500) {
     return '';
   }
 
-  return input
-    .replace(CONTROL_CHARS_REGEX, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, maxLength);
+  return input.replace(CONTROL_CHARS_REGEX, '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
 }
 
 /**

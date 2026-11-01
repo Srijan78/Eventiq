@@ -37,10 +37,18 @@ export const birthdayProfile = Object.freeze({
 
   timelineMilestones: Object.freeze([
     { id: 'm-theme-venue', label: 'Choose Theme & Book Venue / Plan Home Space', weeksBefore: 6 },
-    { id: 'm-invites-vendors', label: 'Send Invitations & Book Entertainer / Host', weeksBefore: 4 },
+    {
+      id: 'm-invites-vendors',
+      label: 'Send Invitations & Book Entertainer / Host',
+      weeksBefore: 4,
+    },
     { id: 'm-cake-catering', label: 'Order Custom Cake & Finalize Menu', weeksBefore: 2 },
     { id: 'm-favors-decor', label: 'Purchase Decor, Return Gifts & Party Props', weeksBefore: 1 },
-    { id: 'm-final-headcount', label: 'Confirm RSVPs & Prepare Playlist / Games', weeksBefore: 0.5 },
+    {
+      id: 'm-final-headcount',
+      label: 'Confirm RSVPs & Prepare Playlist / Games',
+      weeksBefore: 0.5,
+    },
     { id: 'm-party-day', label: 'Party Execution & Celebration', weeksBefore: 0 },
   ]),
 
@@ -57,42 +65,48 @@ export const birthdayProfile = Object.freeze({
       label: 'Party Catering & Finger Foods',
       bookWeeksBefore: 3,
       priority: 'normal',
-      questionsHint: 'Inquire about kid-friendly bite portions, beverage stations, and heating equipment.',
+      questionsHint:
+        'Inquire about kid-friendly bite portions, beverage stations, and heating equipment.',
     },
     {
       id: 'cake',
       label: 'Bespoke Bakery & Cake Designer',
       bookWeeksBefore: 2,
       priority: 'normal',
-      questionsHint: 'Confirm delivery timing to the venue, structural support for multi-tier, and allergen options.',
+      questionsHint:
+        'Confirm delivery timing to the venue, structural support for multi-tier, and allergen options.',
     },
     {
       id: 'entertainment',
       label: 'Party Host, Games & Magic / DJ',
       bookWeeksBefore: 4,
       priority: 'normal',
-      questionsHint: 'Verify age-appropriate interactive activities, equipment setup, and session duration.',
+      questionsHint:
+        'Verify age-appropriate interactive activities, equipment setup, and session duration.',
     },
     {
       id: 'decor',
       label: 'Balloon & Theme Styling',
       bookWeeksBefore: 2,
       priority: 'normal',
-      questionsHint: 'Ask about balloon arch durability, backdrop dimensions, and teardown service.',
+      questionsHint:
+        'Ask about balloon arch durability, backdrop dimensions, and teardown service.',
     },
     {
       id: 'gifts',
       label: 'Party Favors & Return Gifts',
       bookWeeksBefore: 2,
       priority: 'normal',
-      questionsHint: 'Ensure age-suitable curation and keep extra gift units for unexpected siblings.',
+      questionsHint:
+        'Ensure age-suitable curation and keep extra gift units for unexpected siblings.',
     },
     {
       id: 'photography',
       label: 'Event Photography',
       bookWeeksBefore: 3,
       priority: 'normal',
-      questionsHint: 'Ask about candid cake-cutting coverage and turnaround time for edited pictures.',
+      questionsHint:
+        'Ask about candid cake-cutting coverage and turnaround time for edited pictures.',
     },
   ]),
 
@@ -106,7 +120,10 @@ export const birthdayProfile = Object.freeze({
       },
       apply: (ctx) => {
         const guestCount = ctx.request.guests || 20;
-        const supervisorsNeeded = Math.max(1, Math.ceil(guestCount / CONSTANTS.BIRTHDAY.CHILD_SUPERVISOR_RATIO));
+        const supervisorsNeeded = Math.max(
+          1,
+          Math.ceil(guestCount / CONSTANTS.BIRTHDAY.CHILD_SUPERVISOR_RATIO),
+        );
         return {
           useVariant: 'child',
           warnings: [
@@ -220,51 +237,141 @@ export const birthdayProfile = Object.freeze({
     'A joyous and personal birthday celebration highlighting social warmth, fun games, personalized cake centerpiece, and stress-free hospitality.',
 
   templates: Object.freeze({
-    summary: 'A vibrant, fun-filled birthday party plan focused on delightful experiences and memorable moments.',
+    summary:
+      'A vibrant, fun-filled birthday party plan focused on delightful experiences and memorable moments.',
     rationales: Object.freeze({
       venue: 'Provides the setting, energetic space for activities, and guest comfort.',
       catering: 'Delicious, easy-to-eat party foods and beverages tailored to guest tastes.',
-      decor: 'Transforms the room with celebratory balloon installations, banners, and theme props.',
-      photography: 'Captures spontaneous laughter, reactions, and the signature cake cutting moment.',
+      decor:
+        'Transforms the room with celebratory balloon installations, banners, and theme props.',
+      photography:
+        'Captures spontaneous laughter, reactions, and the signature cake cutting moment.',
       entertainment: 'Engaging host, interactive music, or games to keep all guests energized.',
       cake: 'The culinary and visual centerpiece of the birthday celebration.',
       gifts: 'Thoughtful token gifts expressing gratitude to guests for celebrating together.',
-      contingency: 'Safety buffer for unexpected guest siblings, extra snacks, or extended venue time.',
+      contingency:
+        'Safety buffer for unexpected guest siblings, extra snacks, or extended venue time.',
     }),
     categoryTips: Object.freeze({
-      venue: ['Ensure adequate open space for games and group dancing.', 'Confirm trash cans and cleanup bags are provided.'],
-      catering: ['Serve bite-sized items that can be eaten standing without heavy cutlery.', 'Provide continuous hydration and mocktail options.'],
-      decor: ['Invest in a striking photo-worthy backdrop around the cake table.', 'Avoid helium balloons near ceiling fans.'],
-      photography: ['Photograph decor and cake table before guests arrive.', 'Ensure group photos are taken before the party winds down.'],
-      entertainment: ['Schedule structured games during the first hour while energy is high.', 'Prepare backup background playlists on phone.'],
-      cake: ['Have candles, lighter, and cake knife ready at the table 15 minutes prior.', 'Store cake in a cool room away from direct sunlight.'],
-      gifts: ['Pre-pack return gifts with name tags for easy distribution at exit.', 'Keep 3-4 extra favor bags on standby.'],
-      contingency: ['Keep a small roll of duct tape and scissors in your party kit.', 'Have emergency phone charging banks accessible.'],
+      venue: [
+        'Ensure adequate open space for games and group dancing.',
+        'Confirm trash cans and cleanup bags are provided.',
+      ],
+      catering: [
+        'Serve bite-sized items that can be eaten standing without heavy cutlery.',
+        'Provide continuous hydration and mocktail options.',
+      ],
+      decor: [
+        'Invest in a striking photo-worthy backdrop around the cake table.',
+        'Avoid helium balloons near ceiling fans.',
+      ],
+      photography: [
+        'Photograph decor and cake table before guests arrive.',
+        'Ensure group photos are taken before the party winds down.',
+      ],
+      entertainment: [
+        'Schedule structured games during the first hour while energy is high.',
+        'Prepare backup background playlists on phone.',
+      ],
+      cake: [
+        'Have candles, lighter, and cake knife ready at the table 15 minutes prior.',
+        'Store cake in a cool room away from direct sunlight.',
+      ],
+      gifts: [
+        'Pre-pack return gifts with name tags for easy distribution at exit.',
+        'Keep 3-4 extra favor bags on standby.',
+      ],
+      contingency: [
+        'Keep a small roll of duct tape and scissors in your party kit.',
+        'Have emergency phone charging banks accessible.',
+      ],
     }),
     vendorQuestions: Object.freeze({
-      venue: ['Can we arrive 1 hour early for balloon and banner decoration?', 'Are outside sound systems allowed?'],
-      catering: ['Are chafing dishes and warmers provided with the service?', 'Can menu items be labeled for dietary clarity?'],
-      cake: ['Is direct venue delivery handled by your temperature-controlled vehicle?', 'Do you provide allergen-free cupcake alternatives?'],
-      entertainment: ['What age group is your interactive magic/game repertoire best suited for?', 'Do you bring your own wireless speaker and mic?'],
-      decor: ['How long does installation take, and do you include teardown?', 'Are balloon materials biodegradable?'],
-      gifts: ['Can return gifts be themed to match our party character or color scheme?', 'Is gift wrapping included?'],
-      photography: ['Can you provide high-resolution digital files within 7 business days?', 'Do you offer a quick teaser preview?'],
+      venue: [
+        'Can we arrive 1 hour early for balloon and banner decoration?',
+        'Are outside sound systems allowed?',
+      ],
+      catering: [
+        'Are chafing dishes and warmers provided with the service?',
+        'Can menu items be labeled for dietary clarity?',
+      ],
+      cake: [
+        'Is direct venue delivery handled by your temperature-controlled vehicle?',
+        'Do you provide allergen-free cupcake alternatives?',
+      ],
+      entertainment: [
+        'What age group is your interactive magic/game repertoire best suited for?',
+        'Do you bring your own wireless speaker and mic?',
+      ],
+      decor: [
+        'How long does installation take, and do you include teardown?',
+        'Are balloon materials biodegradable?',
+      ],
+      gifts: [
+        'Can return gifts be themed to match our party character or color scheme?',
+        'Is gift wrapping included?',
+      ],
+      photography: [
+        'Can you provide high-resolution digital files within 7 business days?',
+        'Do you offer a quick teaser preview?',
+      ],
     }),
     vendorRedFlags: Object.freeze({
-      venue: ['Demanding hidden cleaning fees not mentioned in original booking.', 'Insufficient electrical outlets for audio equipment.'],
-      catering: ['Lukewarm food delivery without heating trays.', 'Uncovered food displays vulnerable to dust.'],
-      cake: ['Unstable structural dowels causing tilting during transport.', 'Late delivery missing the cake cutting schedule.'],
-      entertainment: ['Inappropriate jokes or unengaging monotone game hosting.', 'Failure to engage shy children or guests.'],
-      decor: ['Low-grade balloons popping spontaneously before the event begins.', 'Damage to venue walls using non-removable adhesives.'],
-      gifts: ['Broken or hazardous cheap plastic toys for small children.', 'Mismatched favor packaging.'],
-      photography: ['Missing the crucial cake blow-out moment due to distraction.', 'Excessive delays delivering digital photos.'],
+      venue: [
+        'Demanding hidden cleaning fees not mentioned in original booking.',
+        'Insufficient electrical outlets for audio equipment.',
+      ],
+      catering: [
+        'Lukewarm food delivery without heating trays.',
+        'Uncovered food displays vulnerable to dust.',
+      ],
+      cake: [
+        'Unstable structural dowels causing tilting during transport.',
+        'Late delivery missing the cake cutting schedule.',
+      ],
+      entertainment: [
+        'Inappropriate jokes or unengaging monotone game hosting.',
+        'Failure to engage shy children or guests.',
+      ],
+      decor: [
+        'Low-grade balloons popping spontaneously before the event begins.',
+        'Damage to venue walls using non-removable adhesives.',
+      ],
+      gifts: [
+        'Broken or hazardous cheap plastic toys for small children.',
+        'Mismatched favor packaging.',
+      ],
+      photography: [
+        'Missing the crucial cake blow-out moment due to distraction.',
+        'Excessive delays delivering digital photos.',
+      ],
     }),
     ideas: Object.freeze({
-      themes: ['Retro Arcade & Neon Glow', 'Whimsical Enchanted Forest', 'Vintage Hollywood Red Carpet Celebration'],
-      activities: ['Custom Trivia About the Birthday Star', 'Live DIY Cupcake Decorating Station', 'Music Video Flash Challenge'],
-      menu: ['Gourmet Sliders & Handcrafted Fries', 'Bite-Sized Quesadillas & Fresh Guacamole', 'Artisanal Churros with Warm Chocolate Dip'],
-      decor: ['Personalized Photo Memory Chandelier', 'Organic Balloon Garland with Foliage Accents', 'Custom Neon Name Sign Backdrop'],
-      extras: ['Signature Non-Alcoholic Mocktail Wall', 'Instant Polaroid Scrapbook Guestbook', 'Customized Playlist Curated by Friends'],
+      themes: [
+        'Retro Arcade & Neon Glow',
+        'Whimsical Enchanted Forest',
+        'Vintage Hollywood Red Carpet Celebration',
+      ],
+      activities: [
+        'Custom Trivia About the Birthday Star',
+        'Live DIY Cupcake Decorating Station',
+        'Music Video Flash Challenge',
+      ],
+      menu: [
+        'Gourmet Sliders & Handcrafted Fries',
+        'Bite-Sized Quesadillas & Fresh Guacamole',
+        'Artisanal Churros with Warm Chocolate Dip',
+      ],
+      decor: [
+        'Personalized Photo Memory Chandelier',
+        'Organic Balloon Garland with Foliage Accents',
+        'Custom Neon Name Sign Backdrop',
+      ],
+      extras: [
+        'Signature Non-Alcoholic Mocktail Wall',
+        'Instant Polaroid Scrapbook Guestbook',
+        'Customized Playlist Curated by Friends',
+      ],
     }),
   }),
 });

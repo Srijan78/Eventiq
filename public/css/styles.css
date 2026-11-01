@@ -4,13 +4,14 @@
    ========================================================================== */
 
 :root {
-  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-family:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --color-bg: #f8fafc;
   --color-surface: #ffffff;
   --color-surface-muted: #f1f5f9;
   --color-border: #cbd5e1;
   --color-border-focus: #1e40af;
-  
+
   --color-text-main: #0f172a;
   --color-text-muted: #475569;
   --color-text-inverse: #ffffff;
@@ -19,7 +20,7 @@
   --color-primary-hover: #1e3a8a;
   --color-secondary: #0f766e;
   --color-secondary-hover: #115e59;
-  
+
   --color-success-bg: #ecfdf5;
   --color-success-text: #065f46;
   --color-success-border: #10b981;
@@ -42,7 +43,9 @@
 /* --------------------------------------------------------------------------
    Base & Accessibility Resets
    -------------------------------------------------------------------------- */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -250,7 +253,7 @@ body {
   border-color: var(--color-border-focus);
 }
 
-.form-control[aria-invalid="true"] {
+.form-control[aria-invalid='true'] {
   border-color: var(--color-danger-border);
   background-color: #fffafa;
 }
@@ -1071,7 +1074,9 @@ body {
    Prefers Reduced Motion
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

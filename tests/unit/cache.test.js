@@ -71,4 +71,3 @@ test('buildCacheKey: differs when today date or inputs change', () => {
   const keyDay2 = buildCacheKey(req, 'gemini-3.5-flash-lite', '2026-11-02');
   assert.notEqual(keyDay1, keyDay2, 'Cache keys must differ across dates due to weeksToEvent');
 });
-

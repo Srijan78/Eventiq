@@ -13,9 +13,21 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   GEMINI_API_KEY: z.string().trim().default(''),
   GEMINI_MODEL: z.string().trim().min(1).default(CONSTANTS.GEMINI.DEFAULT_MODEL),
-  CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(CONSTANTS.CACHE.DEFAULT_TTL_SECONDS),
-  CACHE_MAX_ENTRIES: z.coerce.number().int().positive().default(CONSTANTS.CACHE.DEFAULT_MAX_ENTRIES),
-  RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(CONSTANTS.RATE_LIMIT.DEFAULT_GENERAL_PER_MIN),
+  CACHE_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(CONSTANTS.CACHE.DEFAULT_TTL_SECONDS),
+  CACHE_MAX_ENTRIES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(CONSTANTS.CACHE.DEFAULT_MAX_ENTRIES),
+  RATE_LIMIT_PER_MIN: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(CONSTANTS.RATE_LIMIT.DEFAULT_GENERAL_PER_MIN),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 

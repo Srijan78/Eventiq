@@ -49,13 +49,21 @@ export function renderSummaryBar(plan, container) {
     const offlineBanner = el('div', 'banner-offline');
     offlineBanner.setAttribute('role', 'status');
     offlineBanner.appendChild(el('span', 'badge badge-offline', 'Offline Mode'));
-    offlineBanner.appendChild(el('span', 'banner-text', ' Generated via deterministic event profile templates. AI service is currently unavailable or unconfigured.'));
+    offlineBanner.appendChild(
+      el(
+        'span',
+        'banner-text',
+        ' Generated via deterministic event profile templates. AI service is currently unavailable or unconfigured.',
+      ),
+    );
     summaryBox.appendChild(offlineBanner);
   }
 
   const healthBox = el('div', `health-meter health-${plan.budget.health.level}`);
   const healthHeader = el('div', 'health-header');
-  healthHeader.appendChild(el('span', 'health-label', `Budget Feasibility: ${plan.budget.health.level.toUpperCase()}`));
+  healthHeader.appendChild(
+    el('span', 'health-label', `Budget Feasibility: ${plan.budget.health.level.toUpperCase()}`),
+  );
   healthBox.appendChild(healthHeader);
   healthBox.appendChild(el('p', 'health-reason', plan.budget.health.reason));
   summaryBox.appendChild(healthBox);
@@ -76,7 +84,9 @@ export function renderSummaryBar(plan, container) {
  */
 export function renderWhyPanel(firedRules, container) {
   const details = el('details', 'why-panel');
-  details.appendChild(el('summary', 'why-summary', `Why this plan? (${firedRules.length} Contextual Rules Applied)`));
+  details.appendChild(
+    el('summary', 'why-summary', `Why this plan? (${firedRules.length} Contextual Rules Applied)`),
+  );
 
   const body = el('div', 'why-body');
   const list = el('div', 'rules-list');

@@ -11,11 +11,7 @@ function escapeIcsText(str) {
   if (!str) {
     return '';
   }
-  return str
-    .replace(/\\/g, '\\\\')
-    .replace(/;/g, '\\;')
-    .replace(/,/g, '\\,')
-    .replace(/\n/g, '\\n');
+  return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
 }
 
 /**
@@ -117,4 +113,3 @@ export function googleCalendarUrl(milestone, eventName = 'Eventiq Plan') {
 
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${startDate}/${endDate}&details=${details}`;
 }
-

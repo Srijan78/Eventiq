@@ -11,7 +11,10 @@ test('getAllProfiles: all profiles have valid contracts and allocations summing 
     assert.ok(profile.label, 'Profile must have a label');
     assert.ok(profile.timelineMilestones.length > 0, 'Profile must have milestones');
     assert.ok(profile.vendorCategories.length > 0, 'Profile must have vendor categories');
-    assert.ok(profile.perGuestBands.comfortable > profile.perGuestBands.tight, 'Bands must be ordered');
+    assert.ok(
+      profile.perGuestBands.comfortable > profile.perGuestBands.tight,
+      'Bands must be ordered',
+    );
     assert.ok(Array.isArray(profile.rules), 'Rules must be an array');
     assert.ok(profile.templates, 'Profile must provide offline templates');
 

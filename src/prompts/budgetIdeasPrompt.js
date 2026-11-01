@@ -87,4 +87,3 @@ Please produce tailored rationale and actionable tips for each category ID liste
     responseSchema: budgetIdeasResponseSchema,
   };
 }
-

@@ -58,7 +58,10 @@ async function fetchAiContent(geminiService, engine, sanitized) {
       return { mode: 'ai', aiContent };
     }
   } catch (err) {
-    logger.warn({ err: err.message }, 'AI content generation failed, falling back to deterministic offline templates');
+    logger.warn(
+      { err: err.message },
+      'AI content generation failed, falling back to deterministic offline templates',
+    );
   }
 
   return { mode: 'offline', aiContent: null };
@@ -83,7 +86,9 @@ function mergeContent(engine, aiContent) {
 
   const categories = engine.budget.categories.map((c) => {
     const match = aiContent.categories?.find((ac) => ac.id === c.id);
-    return match ? { ...c, rationale: match.rationale || c.rationale, tips: match.tips || c.tips } : c;
+    return match
+      ? { ...c, rationale: match.rationale || c.rationale, tips: match.tips || c.tips }
+      : c;
   });
 
   const timeline = engine.timeline.map((m) => {
@@ -93,7 +98,9 @@ function mergeContent(engine, aiContent) {
 
   const vendors = engine.vendors.map((v) => {
     const match = aiContent.vendorGuidance?.find((av) => av.categoryId === v.categoryId);
-    return match ? { ...v, questions: match.questions || v.questions, redFlags: match.redFlags || v.redFlags } : v;
+    return match
+      ? { ...v, questions: match.questions || v.questions, redFlags: match.redFlags || v.redFlags }
+      : v;
   });
 
   const ideas = aiContent.ideas || engine.ideas;
@@ -118,7 +125,10 @@ export async function generatePlan(validatedRequest, options = {}) {
     return cachedPlan;
   }
 
-  logger.info({ eventType: sanitized.eventType, guests: sanitized.guests }, 'Executing decision engine');
+  logger.info(
+    { eventType: sanitized.eventType, guests: sanitized.guests },
+    'Executing decision engine',
+  );
   const engine = runEngine(sanitized);
   const { mode, aiContent } = await fetchAiContent(options.geminiService, engine, sanitized);
   const merged = mergeContent(engine, aiContent);

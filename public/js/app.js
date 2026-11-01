@@ -154,4 +154,3 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPlan(savedSession.plan, resultsContainer);
   }
 });
-

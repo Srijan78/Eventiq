@@ -52,17 +52,14 @@ test('requestSchema: fills default values for optional fields', () => {
 });
 
 test('requestSchema: rejects past dates', () => {
-  assert.throws(
-    () => {
-      validateRequest({
-        eventType: 'birthday',
-        eventDate: '2020-01-01',
-        guests: 20,
-        budget: 10000,
-      });
-    },
-    /cannot be in the past/,
-  );
+  assert.throws(() => {
+    validateRequest({
+      eventType: 'birthday',
+      eventDate: '2020-01-01',
+      guests: 20,
+      budget: 10000,
+    });
+  }, /cannot be in the past/);
 });
 
 test('requestSchema: rejects guests outside bounds [1, 5000]', () => {
@@ -70,29 +67,23 @@ test('requestSchema: rejects guests outside bounds [1, 5000]', () => {
   futureDate.setDate(futureDate.getDate() + 30);
   const dateStr = futureDate.toISOString().split('T')[0];
 
-  assert.throws(
-    () => {
-      validateRequest({
-        eventType: 'birthday',
-        eventDate: dateStr,
-        guests: 0,
-        budget: 10000,
-      });
-    },
-    /Guest count must be at least 1/,
-  );
+  assert.throws(() => {
+    validateRequest({
+      eventType: 'birthday',
+      eventDate: dateStr,
+      guests: 0,
+      budget: 10000,
+    });
+  }, /Guest count must be at least 1/);
 
-  assert.throws(
-    () => {
-      validateRequest({
-        eventType: 'birthday',
-        eventDate: dateStr,
-        guests: 5001,
-        budget: 10000,
-      });
-    },
-    /Guest count cannot exceed 5000/,
-  );
+  assert.throws(() => {
+    validateRequest({
+      eventType: 'birthday',
+      eventDate: dateStr,
+      guests: 5001,
+      budget: 10000,
+    });
+  }, /Guest count cannot exceed 5000/);
 });
 
 test('requestSchema: rejects budget outside bounds [1000, 100000000]', () => {
@@ -100,29 +91,23 @@ test('requestSchema: rejects budget outside bounds [1000, 100000000]', () => {
   futureDate.setDate(futureDate.getDate() + 30);
   const dateStr = futureDate.toISOString().split('T')[0];
 
-  assert.throws(
-    () => {
-      validateRequest({
-        eventType: 'community',
-        eventDate: dateStr,
-        guests: 100,
-        budget: 500,
-      });
-    },
-    /Budget must be at least ₹1000/,
-  );
+  assert.throws(() => {
+    validateRequest({
+      eventType: 'community',
+      eventDate: dateStr,
+      guests: 100,
+      budget: 500,
+    });
+  }, /Budget must be at least ₹1000/);
 
-  assert.throws(
-    () => {
-      validateRequest({
-        eventType: 'community',
-        eventDate: dateStr,
-        guests: 100,
-        budget: 100000001,
-      });
-    },
-    /Budget cannot exceed ₹100000000/,
-  );
+  assert.throws(() => {
+    validateRequest({
+      eventType: 'community',
+      eventDate: dateStr,
+      guests: 100,
+      budget: 100000001,
+    });
+  }, /Budget cannot exceed ₹100000000/);
 });
 
 test('requestSchema: requires eventName when eventType is "other"', () => {
@@ -130,18 +115,15 @@ test('requestSchema: requires eventName when eventType is "other"', () => {
   futureDate.setDate(futureDate.getDate() + 30);
   const dateStr = futureDate.toISOString().split('T')[0];
 
-  assert.throws(
-    () => {
-      validateRequest({
-        eventType: 'other',
-        eventDate: dateStr,
-        guests: 40,
-        budget: 100000,
-        eventName: '',
-      });
-    },
-    /Event name is required when event type is/,
-  );
+  assert.throws(() => {
+    validateRequest({
+      eventType: 'other',
+      eventDate: dateStr,
+      guests: 40,
+      budget: 100000,
+      eventName: '',
+    });
+  }, /Event name is required when event type is/);
 
   const validOther = validateRequest({
     eventType: 'other',
@@ -224,4 +206,3 @@ test('planSchema: validates a complete valid plan object', () => {
   assert.equal(validated.id, 'test-plan-1');
   assert.equal(validated.budget.categories[0].amount, 100000);
 });
-

@@ -7,7 +7,10 @@ import { ENV } from './config/env.js';
 import { logger } from './utils/logger.js';
 
 const server = app.listen(ENV.PORT, () => {
-  logger.info({ port: ENV.PORT, env: ENV.NODE_ENV }, `Eventiq server listening on http://localhost:${ENV.PORT}`);
+  logger.info(
+    { port: ENV.PORT, env: ENV.NODE_ENV },
+    `Eventiq server listening on http://localhost:${ENV.PORT}`,
+  );
 });
 
 function gracefulShutdown(signal) {
@@ -26,4 +29,3 @@ function gracefulShutdown(signal) {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-

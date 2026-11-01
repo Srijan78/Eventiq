@@ -22,7 +22,9 @@ export const SHARED_RULES = Object.freeze([
       if (health.level === 'tight') {
         shifts.catering = CONSTANTS.RULE_SHIFTS.TIGHT_CATERING;
         shifts.decor = CONSTANTS.RULE_SHIFTS.TIGHT_DECOR;
-        warnings.push('Tight budget detected: Reallocated +4% to protect catering and food quality while trimming decor.');
+        warnings.push(
+          'Tight budget detected: Reallocated +4% to protect catering and food quality while trimming decor.',
+        );
       } else if (health.level === 'unrealistic') {
         const multiplier = CONSTANTS.COST_MULTIPLIERS[ctx.costLevel] || 1.0;
         const minViableBudget = Math.round(ctx.bands.tight * multiplier * ctx.request.guests);
@@ -49,7 +51,9 @@ export const SHARED_RULES = Object.freeze([
   {
     id: 'S-URGENT',
     description: 'Urgent planning runway (< 4 weeks to event date)',
-    applies: (ctx) => ctx.weeksToEvent <= CONSTANTS.TIMELINE.URGENT_WEEKS && ctx.weeksToEvent > CONSTANTS.TIMELINE.VERY_URGENT_WEEKS,
+    applies: (ctx) =>
+      ctx.weeksToEvent <= CONSTANTS.TIMELINE.URGENT_WEEKS &&
+      ctx.weeksToEvent > CONSTANTS.TIMELINE.VERY_URGENT_WEEKS,
     apply: () => ({
       warnings: [
         'Urgent event timeline (< 4 weeks away): Compressed scheduling active. Immediate vendor locking is vital.',
@@ -79,7 +83,8 @@ export const SHARED_RULES = Object.freeze([
           id: 'immediate-turnaround',
           title: 'Extreme Time Crunch',
           severity: CONSTANTS.SEVERITY.HIGH,
-          mitigation: 'Focus strictly on venue access, essential catering, and immediate attendees. Omit multi-round approvals.',
+          mitigation:
+            'Focus strictly on venue access, essential catering, and immediate attendees. Omit multi-round approvals.',
         },
       ],
     }),
@@ -104,7 +109,8 @@ export const SHARED_RULES = Object.freeze([
           id: 'crowd-traffic',
           title: 'Arrival Congestion & Long Lines',
           severity: CONSTANTS.SEVERITY.MEDIUM,
-          mitigation: 'Set up at least 3 distinct food/refreshment stations and multiple registration counters.',
+          mitigation:
+            'Set up at least 3 distinct food/refreshment stations and multiple registration counters.',
         },
       ],
     }),
@@ -149,7 +155,8 @@ export const SHARED_RULES = Object.freeze([
           id: 'monsoon-disruption',
           title: 'Rain & Electrical Hazards',
           severity: CONSTANTS.SEVERITY.HIGH,
-          mitigation: 'Contract waterproof outdoor canopy with elevated wooden platforms and waterproof electrical cabling.',
+          mitigation:
+            'Contract waterproof outdoor canopy with elevated wooden platforms and waterproof electrical cabling.',
         },
       ],
     }),
