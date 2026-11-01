@@ -668,6 +668,47 @@ body {
 }
 
 /* Budget Table */
+.whatif-panel {
+  background-color: #f1f5f9;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.whatif-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.whatif-desc {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.whatif-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .whatif-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.whatif-status {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-top: 0.5rem;
+}
+
 .budget-stats-bar {
   display: grid;
   grid-template-columns: 1fr;

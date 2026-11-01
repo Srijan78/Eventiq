@@ -5,6 +5,7 @@
 
 import { initChecklist } from './checklist.js';
 import { postExportIcs } from './api.js';
+import { initWhatIfControls } from './whatif.js';
 
 /**
  * Creates an element with optional class name and text content.
@@ -111,8 +112,9 @@ export function renderSummaryBar(plan, container) {
  *
  * @param {object} budget
  * @param {HTMLElement} container
+ * @param {object} plan
  */
-export function renderBudget(budget, container) {
+export function renderBudget(budget, container, plan) {
   const section = el('section', 'results-section');
   section.id = 'budget';
   section.setAttribute('aria-labelledby', 'heading-budget');
@@ -124,11 +126,13 @@ export function renderBudget(budget, container) {
   const statsBar = el('div', 'budget-stats-bar');
   const stat1 = el('div', 'stat-card');
   stat1.appendChild(el('span', 'stat-label', 'Total Budget'));
-  stat1.appendChild(el('span', 'stat-value', `₹${budget.total.toLocaleString('en-IN')}`));
+  const stat1Val = el('span', 'stat-value stat-total-val', `₹${budget.total.toLocaleString('en-IN')}`);
+  stat1.appendChild(stat1Val);
 
   const stat2 = el('div', 'stat-card');
   stat2.appendChild(el('span', 'stat-label', 'Spend per Guest'));
-  stat2.appendChild(el('span', 'stat-value', `₹${budget.perGuest.toLocaleString('en-IN')}`));
+  const stat2Val = el('span', 'stat-value stat-guest-val', `₹${budget.perGuest.toLocaleString('en-IN')}`);
+  stat2.appendChild(stat2Val);
 
   const stat3 = el('div', 'stat-card');
   stat3.appendChild(el('span', 'stat-label', 'Allocated Categories'));
@@ -138,6 +142,44 @@ export function renderBudget(budget, container) {
   statsBar.appendChild(stat2);
   statsBar.appendChild(stat3);
   section.appendChild(statsBar);
+
+  // Mount What-If Controls (FR-40)
+  if (plan && plan.request) {
+    initWhatIfControls(plan, section, (updated) => {
+      // 1. Update stats
+      stat1Val.textContent = `₹${updated.budget.total.toLocaleString('en-IN')}`;
+      stat2Val.textContent = `₹${updated.budget.perGuest.toLocaleString('en-IN')}`;
+
+      // 2. Update table rows
+      for (const cat of updated.budget.categories) {
+        const row = section.querySelector(`tr[data-cat-id="${cat.id}"]`);
+        if (row) {
+          const pctEl = row.querySelector('.cat-pct');
+          const amtEl = row.querySelector('.cat-amt');
+          if (pctEl) {
+            pctEl.textContent = `${cat.percent}%`;
+          }
+          if (amtEl) {
+            amtEl.textContent = `₹${cat.amount.toLocaleString('en-IN')}`;
+          }
+        }
+      }
+
+      // 3. Update Health Meter in Summary Bar
+      const healthMeter = document.querySelector('.health-meter');
+      if (healthMeter) {
+        healthMeter.className = `health-meter health-${updated.budget.health.level}`;
+        const label = healthMeter.querySelector('.health-label');
+        const reason = healthMeter.querySelector('.health-reason');
+        if (label) {
+          label.textContent = `Budget Feasibility: ${updated.budget.health.level.toUpperCase()}`;
+        }
+        if (reason) {
+          reason.textContent = updated.budget.health.reason;
+        }
+      }
+    });
+  }
 
   // Accessible Table
   const tableWrapper = el('div', 'table-wrapper');
@@ -162,6 +204,7 @@ export function renderBudget(budget, container) {
   const tbody = el('tbody');
   for (const cat of budget.categories) {
     const row = el('tr');
+    row.setAttribute('data-cat-id', cat.id);
     const tdName = el('td', 'cat-name', cat.label || cat.id);
     tdName.setAttribute('scope', 'row');
 
@@ -543,7 +586,7 @@ export function renderPlan(plan, resultsContainer) {
   renderRiskRadar(plan.risks, resultsContainer);
 
   // 7. Stacked Sections
-  renderBudget(plan.budget, resultsContainer);
+  renderBudget(plan.budget, resultsContainer, plan);
   renderTimeline(plan.timeline, resultsContainer, eventName);
   renderVendors(plan.vendors, resultsContainer, plan.id);
   renderIdeas(plan.ideas, resultsContainer);
