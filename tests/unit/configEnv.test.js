@@ -39,4 +39,47 @@ test('Config: GEMINI_API_KEY is completely optional and defaults to empty string
   assert.equal(result.data.GEMINI_API_KEY, '');
   assert.equal(result.data.PORT, 3000);
   assert.equal(result.data.TRUST_PROXY, 0);
+  assert.equal(result.data.NODE_ENV, 'development');
+  assert.equal(result.data.LOG_LEVEL, 'info');
+});
+
+test('Config: NODE_ENV accepts valid environments and rejects invalid values', () => {
+  assert.equal(envSchema.safeParse({ NODE_ENV: 'production' }).success, true);
+  assert.equal(envSchema.safeParse({ NODE_ENV: 'test' }).success, true);
+  assert.equal(envSchema.safeParse({ NODE_ENV: 'development' }).success, true);
+  assert.equal(envSchema.safeParse({ NODE_ENV: 'staging' }).success, false);
+});
+
+test('Config: LOG_LEVEL accepts valid log levels and rejects unknown levels', () => {
+  assert.equal(envSchema.safeParse({ LOG_LEVEL: 'debug' }).success, true);
+  assert.equal(envSchema.safeParse({ LOG_LEVEL: 'silent' }).success, true);
+  assert.equal(envSchema.safeParse({ LOG_LEVEL: 'verbose' }).success, false);
+});
+
+test('Config: CACHE and RATE_LIMIT numerical branches enforce positive integers', () => {
+  const valid = envSchema.safeParse({
+    CACHE_TTL_SECONDS: '120',
+    CACHE_MAX_ENTRIES: '500',
+    RATE_LIMIT_PER_MIN: '100',
+  });
+  assert.equal(valid.success, true);
+  assert.equal(valid.data.CACHE_TTL_SECONDS, 120);
+  assert.equal(valid.data.CACHE_MAX_ENTRIES, 500);
+  assert.equal(valid.data.RATE_LIMIT_PER_MIN, 100);
+
+  assert.equal(envSchema.safeParse({ CACHE_TTL_SECONDS: '-10' }).success, false);
+  assert.equal(envSchema.safeParse({ CACHE_MAX_ENTRIES: '0' }).success, false);
+  assert.equal(envSchema.safeParse({ RATE_LIMIT_PER_MIN: 'abc' }).success, false);
+});
+
+test('Config: Formatter accurately formats error issues when safeParse fails', () => {
+  const parsed = envSchema.safeParse({ PORT: 'bad', LOG_LEVEL: 'invalid' });
+  assert.equal(parsed.success, false);
+  if (!parsed.success) {
+    const formatted = parsed.error.issues
+      .map((issue) => ` - ${issue.path.join('.')}: ${issue.message}`)
+      .join('\n');
+    assert.ok(formatted.includes('PORT'));
+    assert.ok(formatted.includes('LOG_LEVEL'));
+  }
 });

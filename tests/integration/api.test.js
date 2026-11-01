@@ -187,3 +187,44 @@ test('HTTP compression test: verifies compression headers on requests accepting 
   const body = await res.json();
   assert.equal(body.status, 'ok');
 });
+
+test('Rate limit headers: /api/plan carries stricter limit 10, other routes carry 60', async () => {
+  const planRes = await dispatchRequest(app, {
+    method: 'POST',
+    url: '/api/plan',
+    body: createValidRequest('wedding'),
+  });
+  const planLimit = planRes.headers['ratelimit-limit'];
+  assert.equal(
+    String(planLimit),
+    '10',
+    `/api/plan must carry strict rate limit 10 (got ${planLimit})`,
+  );
+
+  const whatifRes = await dispatchRequest(app, {
+    method: 'POST',
+    url: '/api/plan/whatif',
+    body: createValidRequest('wedding'),
+  });
+  const whatifLimit = whatifRes.headers['ratelimit-limit'];
+  assert.equal(
+    String(whatifLimit),
+    '60',
+    `/api/plan/whatif must carry general rate limit 60 (got ${whatifLimit})`,
+  );
+});
+
+test('src/app.js: default export matches named export and serves static fallback', async () => {
+  const { default: defaultApp } = await import('../../src/app.js');
+  assert.equal(defaultApp, app);
+
+  const rootRes = await dispatchRequest(defaultApp, { url: '/' });
+  assert.equal(rootRes.status, 200);
+  assert.ok((await rootRes.text()).includes('<!doctype html>'));
+
+  const notFoundRes = await dispatchRequest(defaultApp, { url: '/non-existent-fallback-route' });
+  assert.equal(notFoundRes.status, 404);
+  const data = await notFoundRes.json();
+  assert.equal(data.error.code, 'NOT_FOUND');
+  assert.equal(data.error.stack, undefined);
+});
