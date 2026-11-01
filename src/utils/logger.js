@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview Centralized Pino logger instance with privacy redaction.
  */

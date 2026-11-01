@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview Pure, deterministic decision engine implementing rule-based contextual planning.
  */

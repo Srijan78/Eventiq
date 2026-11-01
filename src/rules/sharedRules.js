@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview Shared rules evaluated across every event profile in fixed sequence.
  */

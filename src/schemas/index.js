@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview Central re-export of Zod schemas and validation utilities.
  */

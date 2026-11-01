@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable no-control-regex */
 /**
  * @fileoverview Text sanitization utilities for prompt injection defense and safe data processing.

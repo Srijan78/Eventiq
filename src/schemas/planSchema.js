@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview Zod schema for full Event Plan validation (both server and Gemini output).
  */

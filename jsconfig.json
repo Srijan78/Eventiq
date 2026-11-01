@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "checkJs": false,
+    "allowJs": true,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "target": "ES2024"
+  },
+  "include": ["src/types.js", "src/rules/**/*", "src/utils/**/*"],
+  "exclude": ["node_modules"]
+}

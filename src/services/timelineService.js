@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview Pure timeline date math, milestone collapse, and schedule generation.
  */

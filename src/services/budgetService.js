@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview Pure budget calculation, allocation reconciliation, and health assessment.
  */

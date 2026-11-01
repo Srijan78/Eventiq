@@ -39,11 +39,13 @@ function getNextDayIcsDate(dateStr) {
 }
 
 /**
- * Generates a valid RFC 5545 iCalendar string from a timeline milestone list.
+ * Builds RFC 5545 VEVENT line array for a milestone.
  *
- * @param {Array<{ label: string, dueDate: string, tasks?: Array<{ title: string, detail?: string }> }>} timeline
- * @param {string} [eventName='Eventiq Plan']
- * @returns {string} Complete iCalendar formatted string
+ * @param {any} m
+ * @param {number} idx
+ * @param {string} eventName
+ * @param {string} nowTimestamp
+ * @returns {string[]}
  */
 function buildIcsEventLines(m, idx, eventName, nowTimestamp) {
   const startDate = toIcsDate(m.dueDate);
@@ -70,6 +72,13 @@ function buildIcsEventLines(m, idx, eventName, nowTimestamp) {
   ];
 }
 
+/**
+ * Generates a valid RFC 5545 iCalendar string from a timeline milestone list.
+ *
+ * @param {Array<{ label: string, dueDate: string, tasks?: Array<{ title: string, detail?: string }> }>} timeline
+ * @param {string} [eventName='Eventiq Plan']
+ * @returns {string} Complete iCalendar formatted string
+ */
 export function generateIcs(timeline, eventName = 'Eventiq Plan') {
   const lines = [
     'BEGIN:VCALENDAR',

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview Zod schema for validating event plan creation requests.
  */

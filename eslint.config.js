@@ -14,11 +14,21 @@ export default [
     },
     rules: {
       'no-console': 'error',
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
       'no-var': 'error',
       'prefer-const': 'error',
       eqeqeq: ['error', 'always'],
       curly: ['error', 'all'],
+      complexity: ['error', 10],
+      'max-depth': ['error', 3],
+      'max-params': ['error', 4],
+      'max-lines-per-function': ['error', { max: 40, skipBlankLines: true, skipComments: true }],
+      'consistent-return': 'error',
+      'no-shadow': 'error',
+      'no-param-reassign': 'error',
     },
   },
   {
@@ -37,7 +47,8 @@ export default [
       },
     },
     rules: {
-      // Allow assert or test specifics in tests
+      'max-lines-per-function': 'off',
+      'no-shadow': 'off',
     },
   },
 ];

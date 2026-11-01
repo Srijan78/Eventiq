@@ -60,17 +60,13 @@ function formatZodResponse(err, requestId) {
 }
 
 /**
- * Formats client-attributable errors (Zod, SyntaxError, PayloadTooLarge).
+ * Handles JSON parsing syntax errors and oversized payload errors.
  *
- * @param {Error} err
+ * @param {any} err
  * @param {string} requestId
  * @returns {{ status: number, body: object } | null}
  */
-function resolveClientError(err, requestId) {
-  if (err instanceof ZodError) {
-    return formatZodResponse(err, requestId);
-  }
-
+function resolvePayloadError(err, requestId) {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     logger.warn({ requestId, err: err.message }, 'Malformed JSON body');
     return {
@@ -85,7 +81,6 @@ function resolveClientError(err, requestId) {
       },
     };
   }
-
   if (err.type === 'entity.too.large') {
     logger.warn({ requestId }, 'Request entity too large');
     return {
@@ -100,7 +95,17 @@ function resolveClientError(err, requestId) {
       },
     };
   }
+  return null;
+}
 
+/**
+ * Formats client application errors (< 500 status).
+ *
+ * @param {any} err
+ * @param {string} requestId
+ * @returns {{ status: number, body: object } | null}
+ */
+function resolveAppClientError(err, requestId) {
   if (err instanceof AppError && err.status < 500) {
     logger.warn({ requestId, code: err.code, err: err.message }, 'Client application error');
     return {
@@ -115,14 +120,57 @@ function resolveClientError(err, requestId) {
       },
     };
   }
+  return null;
+}
 
+/**
+ * Formats client-attributable errors (Zod, SyntaxError, PayloadTooLarge, AppError).
+ *
+ * @param {any} err
+ * @param {string} requestId
+ * @returns {{ status: number, body: object } | null}
+ */
+function resolveClientError(err, requestId) {
+  if (err instanceof ZodError) {
+    return formatZodResponse(err, requestId);
+  }
+  const payloadErr = resolvePayloadError(err, requestId);
+  if (payloadErr) {
+    return payloadErr;
+  }
+  return resolveAppClientError(err, requestId);
+}
+
+/**
+ * Resolves upstream service outage errors.
+ *
+ * @param {any} err
+ * @param {string} requestId
+ * @returns {{ status: number, body: object } | null}
+ */
+function resolveUpstreamError(err, requestId) {
+  if (err.status === 503 || err.code === 'UPSTREAM_UNAVAILABLE') {
+    logger.error({ requestId, err: err.message }, 'Upstream service unavailable');
+    return {
+      status: 503,
+      body: {
+        error: {
+          code: 'UPSTREAM_UNAVAILABLE',
+          message:
+            'The AI planning service is temporarily unavailable. Please retry or use offline mode.',
+          details: [],
+          requestId,
+        },
+      },
+    };
+  }
   return null;
 }
 
 /**
  * Resolves gateway or rate limit errors.
  *
- * @param {Error} err
+ * @param {any} err
  * @param {string} requestId
  * @returns {{ status: number, body: object } | null}
  */
@@ -154,22 +202,7 @@ function resolveSpecialServerStatus(err, requestId) {
       },
     };
   }
-  if (err.status === 503 || err.code === 'UPSTREAM_UNAVAILABLE') {
-    logger.error({ requestId, err: err.message }, 'Upstream service unavailable');
-    return {
-      status: 503,
-      body: {
-        error: {
-          code: 'UPSTREAM_UNAVAILABLE',
-          message:
-            'The AI planning service is temporarily unavailable. Please retry or use offline mode.',
-          details: [],
-          requestId,
-        },
-      },
-    };
-  }
-  return null;
+  return resolveUpstreamError(err, requestId);
 }
 
 /**
