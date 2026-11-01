@@ -149,15 +149,7 @@ export function buildWhatIfPanel(plan, section, statsRefs) {
  * @param {HTMLElement} container - Results container
  * @param {object} plan - Active plan object
  */
-export function renderBudget(budget, container, plan) {
-  const section = el('section', 'results-section');
-  section.id = 'budget';
-  section.setAttribute('aria-labelledby', 'heading-budget');
-
-  const h2 = el('h2', 'section-heading', 'Budget Allocation');
-  h2.id = 'heading-budget';
-  section.appendChild(h2);
-
+function buildBudgetStatsBar(budget) {
   const statsBar = el('div', 'budget-stats-bar');
   const stat1 = el('div', 'stat-card');
   stat1.appendChild(el('span', 'stat-label', 'Total Budget'));
@@ -184,6 +176,19 @@ export function renderBudget(budget, container, plan) {
   statsBar.appendChild(stat1);
   statsBar.appendChild(stat2);
   statsBar.appendChild(stat3);
+  return { statsBar, statTotal, statGuest };
+}
+
+export function renderBudget(budget, container, plan) {
+  const section = el('section', 'results-section');
+  section.id = 'budget';
+  section.setAttribute('aria-labelledby', 'heading-budget');
+
+  const h2 = el('h2', 'section-heading', 'Budget Allocation');
+  h2.id = 'heading-budget';
+  section.appendChild(h2);
+
+  const { statsBar, statTotal, statGuest } = buildBudgetStatsBar(budget);
   section.appendChild(statsBar);
 
   buildWhatIfPanel(plan, section, { statTotal, statGuest });

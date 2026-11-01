@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @fileoverview Google Gemini AI integration with bounded retries, timeouts, and Zod schema validation.
  */
@@ -19,6 +20,16 @@ import { buildVendorPrompt, vendorGuidanceResponseSchema } from '../prompts/vend
  * @param {number} [timeoutMs=CONSTANTS.GEMINI.TIMEOUT_MS]
  * @returns {Promise<T>}
  */
+function raceWithTimeout(task, taskName, timeoutMs) {
+  const timeoutPromise = new Promise((_, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Operation "${taskName}" timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    timer.unref?.();
+  });
+  return Promise.race([task(), timeoutPromise]);
+}
+
 async function executeWithRetry(
   task,
   taskName,
@@ -30,15 +41,7 @@ async function executeWithRetry(
 
   while (attempt <= maxRetries) {
     try {
-      // Race task against timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        const timer = setTimeout(() => {
-          reject(new Error(`Operation "${taskName}" timed out after ${timeoutMs}ms`));
-        }, timeoutMs);
-        timer.unref?.();
-      });
-
-      return await Promise.race([task(), timeoutPromise]);
+      return await raceWithTimeout(task, taskName, timeoutMs);
     } catch (err) {
       attempt++;
       if (attempt > maxRetries) {
@@ -48,7 +51,6 @@ async function executeWithRetry(
         );
         throw err;
       }
-
       logger.warn(
         { taskName, attempt, nextRetryDelayMs: delay, err: err.message },
         'Gemini task attempt failed, retrying with backoff',
@@ -57,7 +59,6 @@ async function executeWithRetry(
       delay *= 2;
     }
   }
-
   throw new Error(`Exhausted retries for ${taskName}`);
 }
 
@@ -110,54 +111,52 @@ async function executeStructuredCall({ ai, modelName, promptData, schema, callNa
  * @param {string} [modelName=CONSTANTS.GEMINI.DEFAULT_MODEL]
  * @returns {{ generateContent: (engineResult: object, req: object) => Promise<object> }}
  */
+async function dispatchParallelGeminiCalls(ai, modelName, engineResult, req) {
+  const [budgetIdeasResult, timelineResult, vendorResult] = await Promise.all([
+    executeStructuredCall({
+      ai,
+      modelName,
+      promptData: buildBudgetIdeasPrompt(engineResult, req),
+      schema: budgetIdeasResponseSchema,
+      callName: 'BudgetIdeasCall',
+    }),
+    executeStructuredCall({
+      ai,
+      modelName,
+      promptData: buildTimelinePrompt(engineResult, req),
+      schema: timelineTasksResponseSchema,
+      callName: 'TimelineTasksCall',
+    }),
+    executeStructuredCall({
+      ai,
+      modelName,
+      promptData: buildVendorPrompt(engineResult, req),
+      schema: vendorGuidanceResponseSchema,
+      callName: 'VendorGuidanceCall',
+    }),
+  ]);
+
+  return {
+    categories: budgetIdeasResult.categories,
+    ideas: budgetIdeasResult.ideas,
+    timelineTasks: timelineResult.timelineTasks,
+    vendorGuidance: vendorResult.vendorGuidance,
+  };
+}
+
+/**
+ * Creates an instance of the Gemini AI Service.
+ *
+ * @param {string} apiKey - Gemini API Key
+ * @param {string} [modelName=CONSTANTS.GEMINI.DEFAULT_MODEL]
+ * @returns {{ generateContent: (engineResult: object, req: object) => Promise<object> }}
+ */
 export function createGeminiService(apiKey, modelName = CONSTANTS.GEMINI.DEFAULT_MODEL) {
   const ai = new GoogleGenAI({ apiKey });
-
   return Object.freeze({
-    /**
-     * Executes the 3 independent Gemini calls in parallel via Promise.all.
-     *
-     * @param {object} engineResult - Deterministic decision engine output
-     * @param {object} req - Sanitized request payload
-     * @returns {Promise<object>} Consolidated AI content
-     */
     async generateContent(engineResult, req) {
       logger.info({ model: modelName }, 'Initiating 3 parallel Gemini calls');
-
-      const budgetIdeasPrompt = buildBudgetIdeasPrompt(engineResult, req);
-      const timelinePrompt = buildTimelinePrompt(engineResult, req);
-      const vendorPrompt = buildVendorPrompt(engineResult, req);
-
-      const [budgetIdeasResult, timelineResult, vendorResult] = await Promise.all([
-        executeStructuredCall({
-          ai,
-          modelName,
-          promptData: budgetIdeasPrompt,
-          schema: budgetIdeasResponseSchema,
-          callName: 'BudgetIdeasCall',
-        }),
-        executeStructuredCall({
-          ai,
-          modelName,
-          promptData: timelinePrompt,
-          schema: timelineTasksResponseSchema,
-          callName: 'TimelineTasksCall',
-        }),
-        executeStructuredCall({
-          ai,
-          modelName,
-          promptData: vendorPrompt,
-          schema: vendorGuidanceResponseSchema,
-          callName: 'VendorGuidanceCall',
-        }),
-      ]);
-
-      return {
-        categories: budgetIdeasResult.categories,
-        ideas: budgetIdeasResult.ideas,
-        timelineTasks: timelineResult.timelineTasks,
-        vendorGuidance: vendorResult.vendorGuidance,
-      };
+      return dispatchParallelGeminiCalls(ai, modelName, engineResult, req);
     },
   });
 }

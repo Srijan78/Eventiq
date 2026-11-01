@@ -98,11 +98,7 @@ function createWhatIfHeader() {
  * @param {HTMLElement} container
  * @param {Function} onRecalculated - Callback when whatif updates numbers
  */
-export function initWhatIfControls(plan, container, onRecalculated) {
-  const box = document.createElement('div');
-  box.className = 'whatif-panel';
-  box.appendChild(createWhatIfHeader());
-
+function buildWhatIfInputs(plan) {
   const controlsGrid = document.createElement('div');
   controlsGrid.className = 'whatif-grid';
 
@@ -124,6 +120,15 @@ export function initWhatIfControls(plan, container, onRecalculated) {
 
   controlsGrid.appendChild(guestGroup);
   controlsGrid.appendChild(budgetGroup);
+  return { controlsGrid, guestInput, budgetInput };
+}
+
+export function initWhatIfControls(plan, container, onRecalculated) {
+  const box = document.createElement('div');
+  box.className = 'whatif-panel';
+  box.appendChild(createWhatIfHeader());
+
+  const { controlsGrid, guestInput, budgetInput } = buildWhatIfInputs(plan);
   box.appendChild(controlsGrid);
 
   const statusEl = document.createElement('span');

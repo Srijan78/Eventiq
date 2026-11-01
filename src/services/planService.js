@@ -1,3 +1,25 @@
+function assembleRawPlan(mode, sanitized, engine, merged) {
+  return {
+    id: randomUUID(),
+    mode,
+    request: sanitized,
+    summary: buildSummary(sanitized, engine),
+    budget: {
+      total: engine.budget.total,
+      perGuest: engine.budget.perGuest,
+      health: engine.budget.health,
+      categories: merged.categories,
+    },
+    timeline: merged.timeline,
+    vendors: merged.vendors,
+    ideas: merged.ideas,
+    warnings: engine.warnings,
+    risks: engine.risks,
+    firedRules: engine.firedRules,
+  };
+}
+
+// @ts-check
 /**
  * @fileoverview Plan orchestration service: runs decision engine and manages offline fallback.
  */
@@ -133,25 +155,7 @@ export async function generatePlan(validatedRequest, options = {}) {
   const { mode, aiContent } = await fetchAiContent(options.geminiService, engine, sanitized);
   const merged = mergeContent(engine, aiContent);
 
-  const rawPlan = {
-    id: randomUUID(),
-    mode,
-    request: sanitized,
-    summary: buildSummary(sanitized, engine),
-    budget: {
-      total: engine.budget.total,
-      perGuest: engine.budget.perGuest,
-      health: engine.budget.health,
-      categories: merged.categories,
-    },
-    timeline: merged.timeline,
-    vendors: merged.vendors,
-    ideas: merged.ideas,
-    warnings: engine.warnings,
-    risks: engine.risks,
-    firedRules: engine.firedRules,
-  };
-
+  const rawPlan = assembleRawPlan(mode, sanitized, engine, merged);
   const validatedPlan = validatePlan(rawPlan);
   if (mode === 'ai') {
     planCache.set(cacheKey, validatedPlan);
