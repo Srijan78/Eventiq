@@ -4,7 +4,7 @@ Live demo: https://eventiq-inky.vercel.app
 
 Eventiq generates complete, mathematically sound event plans for weddings, birthdays, community gatherings, or any custom event, delivering deterministic budget allocations, milestone timelines, vendor checklists, and creative ideas.
 A deterministic decision engine owns all numbers and rules; Gemini only writes content, schema-validated, with an offline fallback.
-Built with Node 20, Express, Gemini via @google/genai, zod, and vanilla ES modules.
+Built with Node 20 and 22, Express, Gemini via @google/genai, zod, and vanilla ES modules.
 
 ---
 
@@ -126,7 +126,7 @@ The following module tree directly matches all repository files tracked in git (
 ├── .env.example          # Reference environment variables
 ├── .gitattributes        # Git line-ending normalization (LF)
 ├── .github/
-│   └── workflows/ci.yml  # Automated GitHub Actions CI pipeline (Node 20, lint, format, test:coverage)
+│   └── workflows/ci.yml  # Automated GitHub Actions CI pipeline (Node 20 & 22 matrix, lint, format, test, coverage on 22)
 ├── .gitignore            # Git exclusion rules
 ├── .prettierrc           # Prettier configuration (LF, 2 spaces, singleQuote)
 ├── Dockerfile            # Multi-stage unprivileged Alpine container
@@ -260,10 +260,10 @@ npm start
 ### 3.4 How to Test
 
 ```bash
-# Run all unit and integration tests (passes 100% offline, zero API keys required)
+# Run all unit and integration tests (passes 100% offline across Node 20 and 22, zero API keys required)
 npm test
 
-# Run tests with native experimental code coverage report
+# Run tests with native experimental code coverage report (requires Node 22+)
 npm run test:coverage
 
 # Run linter and formatting checks
@@ -280,8 +280,6 @@ npx prettier --check .
 | `/api/plan`        | `POST` | 10 / min   | Validated `requestSchema` JSON (max 20 KB)     | `200 JSON` Full `Plan` object (`mode: "ai" \| "offline"`) | Generates complete event plan with budget, timeline, vendors, and ideas |
 | `/api/plan/whatif` | `POST` | 60 / min   | Validated `requestSchema` JSON (max 20 KB)     | `200 JSON` Partial plan (budget, health, warnings)        | Recalculates budget and rules deterministically without calling LLM     |
 | `/api/export/ics`  | `POST` | 60 / min   | `{ eventName: string, timeline: Milestone[] }` | `200 text/calendar` (.ics download)                       | Exports milestone schedule as iCalendar calendar file                   |
-
----
 
 ## 4. Assumptions Made
 
@@ -390,9 +388,9 @@ The table below corresponds strictly to `.env.example`:
 
 ### 9.1 Test Suite & Native Code Coverage
 
-- Eventiq uses the native Node.js test runner (`node:test`) executing **80 automated tests** in **~1.2 seconds** with zero runtime test dependencies.
+- Eventiq uses the native Node.js test runner (`node:test`) executing **80 automated tests** in **~1.2 seconds** with zero runtime test dependencies across **Node.js 20 and Node.js 22**.
 - Tests run **100% offline**, requiring zero external network calls and zero mock libraries or API keys.
-- **Measured Native Code Coverage (`npm run test:coverage`):**
+- **Measured Native Code Coverage (`npm run test:coverage`, requires Node 22+):**
   - **Lines:** 95.75%
   - **Branches:** 87.79%
   - **Functions:** 95.19%
