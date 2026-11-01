@@ -1,0 +1,47 @@
+/* --------------------------------------------------------------------------
+   Print Stylesheet
+   -------------------------------------------------------------------------- */
+@media print {
+  body {
+    background-color: #ffffff;
+    color: #000000;
+  }
+
+  .skip-link,
+  .app-header,
+  .intake-panel,
+  .results-nav,
+  .export-bar,
+  .btn,
+  .app-footer {
+    display: none !important;
+  }
+
+  .layout-grid {
+    display: block;
+    padding: 0;
+  }
+
+  .results-panel {
+    display: block;
+  }
+
+  .results-section {
+    border: none;
+    box-shadow: none;
+    padding: 1rem 0;
+    page-break-inside: avoid;
+  }
+
+  .summary-bar,
+  .risk-radar,
+  .why-panel {
+    border: 1px solid #ccc;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  .why-panel details {
+    open: true;
+  }
+}
