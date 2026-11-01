@@ -68,7 +68,9 @@ app.use(requestIdMiddleware);
 // Serve static frontend assets with absolute path for serverless bundling
 app.use(express.static(publicPath));
 
-// Serve frontend index.html on root GET
+// Serverless and reverse-proxy root fallback: In local Express runs express.static automatically
+// delivers index.html from public/. In certain serverless hosts and edge environments where static
+// folder routing is bypassed or abstracted, this explicit route guarantees GET / always serves the index page.
 app.get('/', (_req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
