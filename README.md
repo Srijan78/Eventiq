@@ -1,5 +1,7 @@
 # Eventiq: GenAI-Powered Event Planning Assistant
 
+Live demo: https://eventiq-inky.vercel.app
+
 A context-aware, practical event planning assistant for weddings, birthdays, community gatherings, and custom events. Eventiq combines a deterministic decision engine with generative AI (Google Gemini) to deliver complete, mathematically sound event plans featuring dynamic budget allocations, milestone timelines, actionable vendor checklists, and personalized event concepts.
 
 ---
@@ -116,13 +118,19 @@ Frontend Render (Vanilla ES Modules)
 ```
 /
 ├── .github/
-│   └── workflows/ci.yml  # Automated GitHub Actions CI pipeline (Node 20, lint, format, test)
+│   └── workflows/ci.yml  # Automated GitHub Actions CI pipeline (Node 20, lint, format, test:coverage)
 ├── src/
 │   ├── config/           # env.js (Zod-validated), constants.js (frozen parameters)
-│   ├── profiles/         # wedding.js, birthday.js, community.js, generic.js, index.js
+│   ├── profiles/         # Modular strategy folders: wedding/, birthday/, community/, generic/, index.js
+│   │   ├── wedding/      # allocation.js, milestones.js, vendors.js, rules.js, templates.js, index.js
+│   │   ├── birthday/     # allocation.js, milestones.js, vendors.js, rules.js, templates.js, index.js
+│   │   ├── community/    # allocation.js, milestones.js, vendors.js, rules.js, templates.js, index.js
+│   │   └── generic/      # allocation.js, milestones.js, vendors.js, rules.js, templates.js, index.js
 │   ├── rules/            # sharedRules.js (universal pure business logic rules)
-│   ├── services/         # decisionEngine.js, budgetService.js, timelineService.js,
-│   │                     # planService.js, geminiService.js
+│   ├── services/         # Core business services
+│   │   ├── engine/       # contextBuilder.js, ruleRunner.js, allocationApplier.js, outputAssembler.js
+│   │   ├── decisionEngine.js # Pipeline orchestrator (under 40 lines)
+│   │   ├── budgetService.js, timelineService.js, planService.js, geminiService.js
 │   ├── prompts/          # budgetIdeasPrompt.js, timelinePrompt.js, vendorPrompt.js
 │   ├── schemas/          # requestSchema.js, planSchema.js, index.js (Zod validation)
 │   ├── controllers/      # planController.js, whatifController.js, exportController.js
@@ -135,13 +143,15 @@ Frontend Render (Vanilla ES Modules)
 ├── public/
 │   ├── index.html        # Accessible semantic HTML5 layout
 │   ├── css/              # Modular stylesheets: base.css, layout.css, components.css, print.css
-│   └── js/               # Vanilla modular client
+│   └── js/               # Modular vanilla client
 │       ├── shared/       # limits.js (single shared source of truth for limits and enums)
-│       └── views/        # budgetView.js, timelineView.js, vendorsView.js, ideasView.js
-│       └── ...           # api.js, app.js, checklist.js, domUtils.js, form.js, state.js, ui.js, whatif.js
+│       ├── form.js       # Form facade orchestrator
+│       ├── formBuilder.js, formProfileFields.js, formValidation.js
+│       ├── budgetView.js, timelineView.js, vendorsView.js, ideasView.js
+│       └── api.js, app.js, checklist.js, domUtils.js, state.js, ui.js, whatif.js
 ├── tests/
 │   ├── helpers/          # request.js (fixtures and request factory helpers)
-│   ├── unit/             # Unit tests (budget, timeline, engine, schemas, cache, sanitize, profiles)
+│   ├── unit/             # Unit tests (budget, timeline, engine, schemas, cache, sanitize, profiles, rules)
 │   └── integration/      # Offline integration tests (API endpoints with mocked Gemini)
 ├── .editorconfig         # Universal editor whitespace and line-ending rules
 ├── .env.example          # Reference environment variables
@@ -149,7 +159,7 @@ Frontend Render (Vanilla ES Modules)
 ├── .gitignore            # Clean git exclusion rules
 ├── .prettierrc           # Prettier configuration (LF, 2 spaces, singleQuote)
 ├── Dockerfile            # Multi-stage unprivileged Alpine container
-├── eslint.config.js      # Strict ESLint flat config (complexity <= 10, max lines <= 40)
+├── eslint.config.js      # Strict ESLint flat config (complexity <= 10, max lines <= 40, max file lines <= 300)
 ├── jsconfig.json         # Static type checking configuration (ES2024)
 ├── LICENSE               # MIT open-source license
 ├── package.json          # Dependencies, engines, and npm scripts
@@ -289,11 +299,23 @@ Liveness probe.
 
 ## 9. Testing Notes
 
-- Eventiq uses Node.js native test runner (`node:test`).
-- **Core Invariant Tests:** Ensures `sum(categoryAmounts) === totalBudget` across all profiles, edge cases, and budget extremes.
-- **Date Math Tests:** Validates timeline due dates, past-due milestone collapsing into "Do now", and duplicate date merging.
-- **Rule Verification:** Tests individual pure rule triggers and allocation shift netting.
-- **Mocked Integration Tests:** End-to-end API route testing verifying schema validation, offline fallback, rate limiting, and what-if calculations without live network access.
+- Eventiq uses the native Node.js test runner (`node:test`) executing **80 automated tests** in **~1.2 seconds** with **95.6% line coverage**.
+- Tests run **100% offline**, requiring zero external network calls and zero mock libraries or runtime dependencies.
+- **Seeded Property Invariant Testing (`tests/unit/propertyBudget.test.js`):** 550 seeded pseudo-random test cases across all four profiles proving mathematical invariants: `sum(categoryAmounts) === totalBudget` strictly holds, zero negative allocations, and contingency reserve floor is always >= 5%.
+- **Table-Driven Boundary Tests (`tests/unit/ruleContracts.test.js`):** Boundary tests for every shared and profile rule (guests 29/30/400/401, exactly 4 weeks, exactly 1 week, monsoon month boundaries, child age 12/13), verifying that all allocation shifts net strictly to zero.
+- **Timeline Date Math Tests (`tests/unit/timelineMath.test.js`):** Injected clock verification covering same-day events, 1 day away, 3 years away, and past dates, with chronological sorting and zero duplicate dates.
+- **Mocked Resilience & Budget Immutability (`tests/unit/geminiMock.test.js`):** Fake client testing covering Gemini success, malformed JSON, schema violation fallback, timeout, exponential retry, offline mode exclusion from cache, and ensuring AI output never overrides code-calculated budget numbers.
+- **Prompt Injection Defense (`tests/unit/securityInjection.test.js`):** Verifies delimiter escaping, control character stripping, and length truncation bounds.
+- **Cache Lifecycle (`tests/unit/cacheAdvanced.test.js`):** Verifies TTL expiration (50ms), LRU capacity eviction, and property-order key invariance.
+- **Environment & Rate Limiting (`tests/unit/configEnv.test.js` & `tests/integration/api.test.js`):** Verifies Zod parsing branches, stricter rate limiting on `/api/plan` (limit 10) vs other routes (limit 60), static fallback, and 413 `PAYLOAD_TOO_LARGE` with `requestId`.
+
+```bash
+# Run all unit and integration tests
+npm test
+
+# Run tests with native experimental code coverage report
+npm run test:coverage
+```
 
 ---
 
