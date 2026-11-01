@@ -115,31 +115,46 @@ Frontend Render (Vanilla ES Modules)
 
 ```
 /
+├── .github/
+│   └── workflows/ci.yml  # Automated GitHub Actions CI pipeline (Node 20, lint, format, test)
 ├── src/
-│   ├── config/         # env.js (Zod-validated), constants.js (frozen parameters)
-│   ├── profiles/       # wedding.js, birthday.js, community.js, generic.js, index.js
-│   ├── services/       # decisionEngine.js, budgetService.js, timelineService.js,
-│   │                   # planService.js, geminiService.js
-│   ├── prompts/        # budgetIdeasPrompt.js, timelinePrompt.js, vendorPrompt.js
-│   ├── schemas/        # requestSchema.js, planSchema.js, refineSchema.js
-│   ├── controllers/    # planController.js, whatifController.js, exportController.js
-│   ├── routes/         # index.js (Express route definitions)
-│   ├── middleware/     # validate.js, errorHandler.js, rateLimiter.js, requestId.js
-│   ├── utils/          # logger.js (Pino), ics.js, cache.js (LRU), sanitize.js
-│   ├── app.js          # Express app assembly & security configuration
-│   └── server.js       # HTTP server boot & graceful shutdown handlers
+│   ├── config/           # env.js (Zod-validated), constants.js (frozen parameters)
+│   ├── profiles/         # wedding.js, birthday.js, community.js, generic.js, index.js
+│   ├── rules/            # sharedRules.js (universal pure business logic rules)
+│   ├── services/         # decisionEngine.js, budgetService.js, timelineService.js,
+│   │                     # planService.js, geminiService.js
+│   ├── prompts/          # budgetIdeasPrompt.js, timelinePrompt.js, vendorPrompt.js
+│   ├── schemas/          # requestSchema.js, planSchema.js, index.js (Zod validation)
+│   ├── controllers/      # planController.js, whatifController.js, exportController.js
+│   ├── routes/           # index.js (Express route definitions)
+│   ├── middleware/       # validate.js, errorHandler.js, rateLimiter.js, requestId.js
+│   ├── utils/            # AppError.js, logger.js (Pino), ics.js, cache.js (LRU), sanitize.js
+│   ├── app.js            # Express app assembly, security configuration, serverless root fallback
+│   ├── server.js         # HTTP server boot & graceful shutdown handlers
+│   └── types.js          # Central JSDoc domain type definitions
 ├── public/
-│   ├── index.html      # Accessible semantic HTML5 layout
-│   ├── css/styles.css  # System font stack, WCAG AA contrast, print & motion queries
-│   └── js/             # Vanilla modular client (api.js, state.js, ui.js, form.js, whatif.js)
+│   ├── index.html        # Accessible semantic HTML5 layout
+│   ├── css/              # Modular stylesheets: base.css, layout.css, components.css, print.css
+│   └── js/               # Vanilla modular client
+│       ├── shared/       # limits.js (single shared source of truth for limits and enums)
+│       └── views/        # budgetView.js, timelineView.js, vendorsView.js, ideasView.js
+│       └── ...           # api.js, app.js, checklist.js, domUtils.js, form.js, state.js, ui.js, whatif.js
 ├── tests/
-│   ├── unit/           # Unit tests (budget, timeline, engine, schemas, cache, sanitize)
-│   └── integration/    # Offline integration tests (API endpoints with mocked Gemini)
-├── .env.example        # Reference environment variables
-├── .eslintrc.json      # Linting configuration
-├── .prettierrc         # Code formatting configuration
-├── package.json        # Dependencies & test scripts
-└── README.md           # Master documentation
+│   ├── helpers/          # request.js (fixtures and request factory helpers)
+│   ├── unit/             # Unit tests (budget, timeline, engine, schemas, cache, sanitize, profiles)
+│   └── integration/      # Offline integration tests (API endpoints with mocked Gemini)
+├── .editorconfig         # Universal editor whitespace and line-ending rules
+├── .env.example          # Reference environment variables
+├── .gitattributes        # Git line-ending normalization (LF)
+├── .gitignore            # Clean git exclusion rules
+├── .prettierrc           # Prettier configuration (LF, 2 spaces, singleQuote)
+├── Dockerfile            # Multi-stage unprivileged Alpine container
+├── eslint.config.js      # Strict ESLint flat config (complexity <= 10, max lines <= 40)
+├── jsconfig.json         # Static type checking configuration (ES2024)
+├── LICENSE               # MIT open-source license
+├── package.json          # Dependencies, engines, and npm scripts
+├── PRD.md                # System specification & requirements
+└── README.md             # Master documentation
 ```
 
 ### 3.3 How to Run
@@ -281,6 +296,19 @@ Liveness probe.
 - **Mocked Integration Tests:** End-to-end API route testing verifying schema validation, offline fallback, rate limiting, and what-if calculations without live network access.
 
 ---
+
+---
+
+## 9.1 Code Quality & Architecture Standards
+
+Eventiq enforces strict production code standards validated automatically in CI:
+
+- **Cyclomatic Complexity:** Every function across the server and client is restricted to a maximum cyclomatic complexity of **10** and a maximum length of **40 statements/lines** (enforced via permanent ESLint rules).
+- **Single Source of Truth:** Data boundaries, string length caps, guest count limits, budget bounds, and event enums are defined once in `public/js/shared/limits.js` and imported by both backend schemas and frontend input validators.
+- **Robust Error Handling:** Centralized through `AppError` (`message`, `status`, `code`, `details`). Swallowed errors and empty catch blocks are strictly prohibited.
+- **Static Type Layer:** Comprehensive domain type definitions in `src/types.js` with JSDoc annotations and `jsconfig.json` verification (`tsc`).
+- **Modular Presentation:** CSS is partitioned into decoupled layers (`base.css`, `layout.css`, `components.css`, `print.css`) without `@import` overhead, respecting strict Content Security Policy.
+- **Automated CI:** GitHub Actions executes dependency verification, linter checks, Prettier formatting validation, and native test suites on every push and PR.
 
 ## 10. Sample Scenarios
 
