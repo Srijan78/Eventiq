@@ -28,6 +28,7 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(CONSTANTS.RATE_LIMIT.DEFAULT_GENERAL_PER_MIN),
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 

@@ -15,6 +15,9 @@ import { logger } from './utils/logger.js';
 
 export const app = express();
 
+// Trust reverse proxy if configured (e.g. behind load balancer or serverless gateway)
+app.set('trust proxy', ENV.TRUST_PROXY);
+
 // Initialize AI services if API key is present
 if (ENV.GEMINI_API_KEY) {
   logger.info({ model: ENV.GEMINI_MODEL }, 'Gemini API key detected; enabling AI mode');

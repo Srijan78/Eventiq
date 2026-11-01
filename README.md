@@ -204,6 +204,7 @@ npm run lint
 | `CACHE_TTL_SECONDS`  | Number | `3600`                  | In-memory plan cache TTL (1 hour)                               |
 | `CACHE_MAX_ENTRIES`  | Number | `100`                   | Maximum cached plans in LRU cache                               |
 | `RATE_LIMIT_PER_MIN` | Number | `60`                    | Max API requests per IP per minute                              |
+| `TRUST_PROXY`        | Number | `0`                     | Express trust proxy hop count for reverse proxies               |
 | `LOG_LEVEL`          | String | `info`                  | Pino logging level (`fatal`, `error`, `warn`, `info`, `debug`)  |
 
 ---
