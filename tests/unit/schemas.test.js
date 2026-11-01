@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateRequest, validatePlan, validateRefineRequest } from '../../src/schemas/index.js';
+import { validateRequest, validatePlan } from '../../src/schemas/index.js';
 
 test('requestSchema: validates a standard wedding request successfully', () => {
   const futureDate = new Date();
@@ -225,18 +225,3 @@ test('planSchema: validates a complete valid plan object', () => {
   assert.equal(validated.budget.categories[0].amount, 100000);
 });
 
-test('refineSchema: rejects instruction longer than 300 chars', () => {
-  assert.throws(
-    () => {
-      validateRefineRequest({
-        instruction: 'a'.repeat(301),
-      });
-    },
-    /cannot exceed 300 characters/,
-  );
-
-  const valid = validateRefineRequest({
-    instruction: 'Please reduce catering and increase photographer budget',
-  });
-  assert.equal(valid.instruction, 'Please reduce catering and increase photographer budget');
-});

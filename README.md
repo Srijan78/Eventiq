@@ -182,6 +182,7 @@ npm run lint
    - Urgency windows: < 4 weeks triggers immediate booking rules; < 1 week collapses to last-minute checklists.
 6. **Rate Limits & Sizing:** 60 requests/minute per IP general; 10 requests/minute per IP for generative endpoints. Request body capped at 20 KB.
 7. **Privacy & Storage:** Zero server-side persistence. Plan restoration and tickable vendor checklist progress persist strictly in the user's browser via `localStorage` (FR-36).
+8. **Refine Scope:** Natural-language refine is not implemented (what-if scenario recalculation is provided deterministically).
 
 ---
 
