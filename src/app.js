@@ -70,3 +70,5 @@ app.use(notFoundHandler);
 
 // Centralized error handler
 app.use(errorHandler);
+
+export default app;
