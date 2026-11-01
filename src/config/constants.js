@@ -35,6 +35,19 @@ export const CONSTANTS = Object.freeze({
     CURRENCY_SYMBOL: '₹',
   }),
 
+  SEVERITY: Object.freeze({
+    LOW: 1,
+    MEDIUM: 2,
+    HIGH: 3,
+  }),
+
+  RULE_SHIFTS: Object.freeze({
+    TIGHT_CATERING: 4,
+    TIGHT_DECOR: -4,
+    INTIMATE_VENUE: -5,
+    INTIMATE_CATERING: 5,
+  }),
+
   SEASONS: Object.freeze({
     MONSOON_MONTHS: Object.freeze([6, 7, 8, 9]), // June to September
     WEDDING_PEAK_MONTHS: Object.freeze([10, 11, 12, 1, 2]), // October to February

@@ -20,8 +20,8 @@ export const SHARED_RULES = Object.freeze([
       const warnings = [];
 
       if (health.level === 'tight') {
-        shifts.catering = 4;
-        shifts.decor = -4;
+        shifts.catering = CONSTANTS.RULE_SHIFTS.TIGHT_CATERING;
+        shifts.decor = CONSTANTS.RULE_SHIFTS.TIGHT_DECOR;
         warnings.push('Tight budget detected: Reallocated +4% to protect catering and food quality while trimming decor.');
       } else if (health.level === 'unrealistic') {
         const multiplier = CONSTANTS.COST_MULTIPLIERS[ctx.costLevel] || 1.0;
@@ -59,7 +59,7 @@ export const SHARED_RULES = Object.freeze([
         {
           id: 'lead-time-scarcity',
           title: 'Limited Vendor Availability',
-          severity: 2,
+          severity: CONSTANTS.SEVERITY.MEDIUM,
           mitigation: 'Book ready-to-go packages rather than custom negotiations.',
         },
       ],
@@ -78,7 +78,7 @@ export const SHARED_RULES = Object.freeze([
         {
           id: 'immediate-turnaround',
           title: 'Extreme Time Crunch',
-          severity: 3,
+          severity: CONSTANTS.SEVERITY.HIGH,
           mitigation: 'Focus strictly on venue access, essential catering, and immediate attendees. Omit multi-round approvals.',
         },
       ],
@@ -103,7 +103,7 @@ export const SHARED_RULES = Object.freeze([
         {
           id: 'crowd-traffic',
           title: 'Arrival Congestion & Long Lines',
-          severity: 2,
+          severity: CONSTANTS.SEVERITY.MEDIUM,
           mitigation: 'Set up at least 3 distinct food/refreshment stations and multiple registration counters.',
         },
       ],
@@ -114,7 +114,10 @@ export const SHARED_RULES = Object.freeze([
     description: 'Intimate gathering (< 30 attendees)',
     applies: (ctx) => ctx.request.guests < CONSTANTS.CROWD_THRESHOLDS.SMALL_GUESTS,
     apply: () => ({
-      allocationShifts: { venue: -5, catering: 5 },
+      allocationShifts: {
+        venue: CONSTANTS.RULE_SHIFTS.INTIMATE_VENUE,
+        catering: CONSTANTS.RULE_SHIFTS.INTIMATE_CATERING,
+      },
       warnings: [
         'Intimate gathering (< 30 guests): Shifted 5% from venue to food and elevated hospitality.',
       ],
@@ -145,7 +148,7 @@ export const SHARED_RULES = Object.freeze([
         {
           id: 'monsoon-disruption',
           title: 'Rain & Electrical Hazards',
-          severity: 3,
+          severity: CONSTANTS.SEVERITY.HIGH,
           mitigation: 'Contract waterproof outdoor canopy with elevated wooden platforms and waterproof electrical cabling.',
         },
       ],

@@ -204,7 +204,7 @@ function selectTopRisks(risks) {
     sorted.push({
       id: 'budget-overrun',
       title: 'Unbudgeted Overtime & Incidental Expenses',
-      severity: 1,
+      severity: CONSTANTS.SEVERITY.LOW,
       mitigation: 'Keep the 5%+ contingency fund untouched until event day for sudden extra supplies.',
     });
   }
