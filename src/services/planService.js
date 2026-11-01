@@ -28,9 +28,82 @@ function buildSummary(req, engine) {
 }
 
 /**
+ * Looks up an identical cached plan for AI mode.
+ *
+ * @param {object} sanitized - Sanitized request
+ * @returns {{ cacheKey: string, cachedPlan: object|null }}
+ */
+function checkPlanCache(sanitized) {
+  const cacheKey = buildCacheKey(sanitized, ENV.GEMINI_MODEL);
+  const cachedPlan = planCache.get(cacheKey);
+  return { cacheKey, cachedPlan };
+}
+
+/**
+ * Requests structured AI enhancements from Gemini with graceful fallback.
+ *
+ * @param {object|undefined} geminiService - Gemini service instance
+ * @param {object} engine - Decision engine output
+ * @param {object} sanitized - Sanitized request
+ * @returns {Promise<{ mode: 'ai'|'offline', aiContent: object|null }>}
+ */
+async function fetchAiContent(geminiService, engine, sanitized) {
+  if (!geminiService || typeof geminiService.generateContent !== 'function') {
+    return { mode: 'offline', aiContent: null };
+  }
+
+  try {
+    const aiContent = await geminiService.generateContent(engine, sanitized);
+    if (aiContent) {
+      return { mode: 'ai', aiContent };
+    }
+  } catch (err) {
+    logger.warn({ err: err.message }, 'AI content generation failed, falling back to deterministic offline templates');
+  }
+
+  return { mode: 'offline', aiContent: null };
+}
+
+/**
+ * Merges engine deterministic outputs with optional AI enhancements.
+ *
+ * @param {object} engine - Decision engine output
+ * @param {object|null} aiContent - Optional AI enhancements
+ * @returns {object} Merged categories, timeline, vendors, and ideas
+ */
+function mergeContent(engine, aiContent) {
+  if (!aiContent) {
+    return {
+      categories: engine.budget.categories,
+      timeline: engine.timeline,
+      vendors: engine.vendors,
+      ideas: engine.ideas,
+    };
+  }
+
+  const categories = engine.budget.categories.map((c) => {
+    const match = aiContent.categories?.find((ac) => ac.id === c.id);
+    return match ? { ...c, rationale: match.rationale || c.rationale, tips: match.tips || c.tips } : c;
+  });
+
+  const timeline = engine.timeline.map((m) => {
+    const match = aiContent.timelineTasks?.find((at) => at.milestoneId === m.id);
+    return match?.tasks?.length ? { ...m, tasks: match.tasks } : m;
+  });
+
+  const vendors = engine.vendors.map((v) => {
+    const match = aiContent.vendorGuidance?.find((av) => av.categoryId === v.categoryId);
+    return match ? { ...v, questions: match.questions || v.questions, redFlags: match.redFlags || v.redFlags } : v;
+  });
+
+  const ideas = aiContent.ideas || engine.ideas;
+
+  return { categories, timeline, vendors, ideas };
+}
+
+/**
  * Generates an event plan. Executes decision engine and merges content.
- * Checks LRU cache for identical requests.
- * Gracefully defaults to deterministic offline templates if AI service is not provided or fails.
+ * Target: under 40 lines.
  *
  * @param {object} validatedRequest - Input validated by requestSchema
  * @param {object} [options={}] - Optional services (e.g. { geminiService })
@@ -38,103 +111,40 @@ function buildSummary(req, engine) {
  */
 export async function generatePlan(validatedRequest, options = {}) {
   const sanitized = sanitizeRequest(validatedRequest);
+  const { cacheKey, cachedPlan } = checkPlanCache(sanitized);
 
-  // Check cache for identical AI-mode plan (Section 9.7)
-  const cacheKey = buildCacheKey(sanitized, ENV.GEMINI_MODEL);
-  const cachedPlan = planCache.get(cacheKey);
   if (cachedPlan) {
     logger.info({ cacheKey, eventType: sanitized.eventType }, 'Serving plan from LRU cache');
     return cachedPlan;
   }
 
   logger.info({ eventType: sanitized.eventType, guests: sanitized.guests }, 'Executing decision engine');
-
-  // Step 1: Execute deterministic decision engine
   const engine = runEngine(sanitized);
+  const { mode, aiContent } = await fetchAiContent(options.geminiService, engine, sanitized);
+  const merged = mergeContent(engine, aiContent);
 
-  const planId = randomUUID();
-  const summary = buildSummary(sanitized, engine);
-
-  // Default mode: offline deterministic template plan
-  let mode = 'offline';
-  let budgetCategories = engine.budget.categories;
-  let timeline = engine.timeline;
-  let vendors = engine.vendors;
-  let ideas = engine.ideas;
-
-  // Step 2: If geminiService is provided, attempt AI-mode enhancement (Step 8 wiring hook)
-  if (options.geminiService && typeof options.geminiService.generateContent === 'function') {
-    try {
-      const aiContent = await options.geminiService.generateContent(engine, sanitized);
-      if (aiContent) {
-        mode = 'ai';
-        if (aiContent.categories) {
-          budgetCategories = budgetCategories.map((c) => {
-            const match = aiContent.categories.find((ac) => ac.id === c.id);
-            return match
-              ? {
-                  ...c,
-                  rationale: match.rationale || c.rationale,
-                  tips: match.tips && match.tips.length > 0 ? match.tips : c.tips,
-                }
-              : c;
-          });
-        }
-        if (aiContent.timelineTasks) {
-          timeline = timeline.map((m) => {
-            const match = aiContent.timelineTasks.find((at) => at.milestoneId === m.id);
-            return match && match.tasks && match.tasks.length > 0 ? { ...m, tasks: match.tasks } : m;
-          });
-        }
-        if (aiContent.vendorGuidance) {
-          vendors = vendors.map((v) => {
-            const match = aiContent.vendorGuidance.find((av) => av.categoryId === v.categoryId);
-            return match
-              ? {
-                  ...v,
-                  questions: match.questions && match.questions.length > 0 ? match.questions : v.questions,
-                  redFlags: match.redFlags && match.redFlags.length > 0 ? match.redFlags : v.redFlags,
-                }
-              : v;
-          });
-        }
-        if (aiContent.ideas) {
-          ideas = aiContent.ideas;
-        }
-      }
-    } catch (err) {
-      logger.warn({ err: err.message }, 'AI content generation failed, falling back to deterministic offline templates');
-      mode = 'offline';
-    }
-  }
-
-  // Step 3: Assemble complete Plan object
   const rawPlan = {
-    id: planId,
+    id: randomUUID(),
     mode,
     request: sanitized,
-    summary,
+    summary: buildSummary(sanitized, engine),
     budget: {
       total: engine.budget.total,
       perGuest: engine.budget.perGuest,
       health: engine.budget.health,
-      categories: budgetCategories,
+      categories: merged.categories,
     },
-    timeline,
-    vendors,
-    ideas,
+    timeline: merged.timeline,
+    vendors: merged.vendors,
+    ideas: merged.ideas,
     warnings: engine.warnings,
     risks: engine.risks,
     firedRules: engine.firedRules,
   };
 
-  // Step 4: Validate plan against strict planSchema
   const validatedPlan = validatePlan(rawPlan);
-
-  // Cache AI-generated plans (Section 9.7: offline plans are not cached)
   if (mode === 'ai') {
     planCache.set(cacheKey, validatedPlan);
   }
-
   return validatedPlan;
 }

@@ -4,170 +4,20 @@
 
 import { CONSTANTS } from '../config/constants.js';
 import { getProfile } from '../profiles/index.js';
+import { SHARED_RULES } from '../rules/sharedRules.js';
 import { reconcile, computeHealth } from './budgetService.js';
 import { buildTimeline, formatDate } from './timelineService.js';
 
 /**
- * Shared rules evaluated across every event profile in fixed sequence.
- * @type {ReadonlyArray<object>}
- */
-const SHARED_RULES = Object.freeze([
-  {
-    id: 'S-HEALTH',
-    description: 'Budget feasibility and tier balancing',
-    applies: () => true,
-    apply: (ctx) => {
-      const health = computeHealth(ctx.perGuest, ctx.costLevel, ctx.bands);
-      const shifts = {};
-      const warnings = [];
-
-      if (health.level === 'tight') {
-        shifts.catering = 4;
-        shifts.decor = -4;
-        warnings.push('Tight budget detected: Reallocated +4% to protect catering and food quality while trimming decor.');
-      } else if (health.level === 'unrealistic') {
-        const multiplier = CONSTANTS.COST_MULTIPLIERS[ctx.costLevel] || 1.0;
-        const minViableBudget = Math.round(ctx.bands.tight * multiplier * ctx.request.guests);
-        warnings.push(
-          `Unrealistic budget warning: Minimum viable spend for ${ctx.request.guests} guests at "${ctx.costLevel}" cost level is approximately ₹${minViableBudget.toLocaleString('en-IN')}. Consider reducing guest list or trimming non-essential categories.`,
-        );
-      }
-
-      return {
-        allocationShifts: shifts,
-        warnings,
-        budgetHealth: health,
-      };
-    },
-  },
-  {
-    id: 'S-CONTINGENCY',
-    description: 'Mandatory contingency reserve floor',
-    applies: () => true,
-    apply: () => ({
-      // Enforced during allocation reconciliation in budgetService
-      warnings: [],
-    }),
-  },
-  {
-    id: 'S-URGENT',
-    description: 'Urgent planning runway (< 4 weeks to event date)',
-    applies: (ctx) => ctx.weeksToEvent <= CONSTANTS.TIMELINE.URGENT_WEEKS && ctx.weeksToEvent > CONSTANTS.TIMELINE.VERY_URGENT_WEEKS,
-    apply: () => ({
-      warnings: [
-        'Urgent event timeline (< 4 weeks away): Compressed scheduling active. Immediate vendor locking is vital.',
-      ],
-      priorityFlags: ['venue', 'catering', 'photography', 'sound'],
-      risks: [
-        {
-          id: 'lead-time-scarcity',
-          title: 'Limited Vendor Availability',
-          severity: 2,
-          mitigation: 'Book ready-to-go packages rather than custom negotiations.',
-        },
-      ],
-    }),
-  },
-  {
-    id: 'S-VERY-URGENT',
-    description: 'Last-minute emergency timeline (≤ 1 week to event date)',
-    applies: (ctx) => ctx.weeksToEvent <= CONSTANTS.TIMELINE.VERY_URGENT_WEEKS,
-    apply: () => ({
-      warnings: [
-        'Critical timeline: Event is within 7 days! Switched to last-minute operational checklist.',
-      ],
-      priorityFlags: ['venue', 'catering', 'sound', 'safety'],
-      risks: [
-        {
-          id: 'immediate-turnaround',
-          title: 'Extreme Time Crunch',
-          severity: 3,
-          mitigation: 'Focus strictly on venue access, essential catering, and immediate attendees. Omit multi-round approvals.',
-        },
-      ],
-    }),
-  },
-  {
-    id: 'S-LARGE',
-    description: 'Large crowd management and traffic logistics (> 400 attendees)',
-    applies: (ctx) => ctx.request.guests > CONSTANTS.CROWD_THRESHOLDS.LARGE_GUESTS,
-    apply: () => ({
-      warnings: [
-        'Large gathering (> 400 guests): Prioritize dedicated parking, multi-queue buffet counters, and clear directional signs.',
-      ],
-      extraTasks: [
-        {
-          milestoneId: 'm-venue-date',
-          title: 'Verify venue parking & egress capacity for 400+ attendees',
-          detail: 'Ensure at least 1 parking slot per 4 guests or arrange valet parking lot.',
-        },
-      ],
-      risks: [
-        {
-          id: 'crowd-traffic',
-          title: 'Arrival Congestion & Long Lines',
-          severity: 2,
-          mitigation: 'Set up at least 3 distinct food/refreshment stations and multiple registration counters.',
-        },
-      ],
-    }),
-  },
-  {
-    id: 'S-SMALL',
-    description: 'Intimate gathering (< 30 attendees)',
-    applies: (ctx) => ctx.request.guests < CONSTANTS.CROWD_THRESHOLDS.SMALL_GUESTS,
-    apply: () => ({
-      allocationShifts: { venue: -5, catering: 5 },
-      warnings: [
-        'Intimate gathering (< 30 guests): Shifted 5% from venue to food and elevated hospitality.',
-      ],
-    }),
-  },
-  {
-    id: 'S-OUTDOOR-SEASON',
-    description: 'Outdoor venue during active monsoon season (June - September)',
-    applies: (ctx) => {
-      const isOutdoor =
-        ctx.request.wedding?.indoor === false ||
-        ctx.request.birthday?.indoor === false ||
-        ctx.request.community?.indoor === false;
-      return isOutdoor && CONSTANTS.SEASONS.MONSOON_MONTHS.includes(ctx.eventMonth);
-    },
-    apply: () => ({
-      warnings: [
-        'Monsoon weather alert (Outdoor event between June and September): Waterproof canopy coverage and raised flooring are critical.',
-      ],
-      extraTasks: [
-        {
-          milestoneId: 'm-attire-decor',
-          title: 'Reserve weather-proof marquee / waterproof canopy backup',
-          detail: 'Ensure covered walkways between dining area, restrooms, and main stage.',
-        },
-      ],
-      risks: [
-        {
-          id: 'monsoon-disruption',
-          title: 'Rain & Electrical Hazards',
-          severity: 3,
-          mitigation: 'Contract waterproof outdoor canopy with elevated wooden platforms and waterproof electrical cabling.',
-        },
-      ],
-    }),
-  },
-]);
-
-/**
- * Runs the full deterministic decision engine pipeline.
+ * Builds the immutable planning context from the request and date.
  *
- * @param {object} validatedRequest - Request validated by requestSchema
- * @param {Date} [referenceDate=new Date()] - Deterministic reference date for testing
- * @returns {object} Calculated plan blueprint including allocations, health, rules, timeline, vendors, risks
+ * @param {object} req - Validated plan request
+ * @param {Date} referenceDate - Current evaluation date
+ * @param {object} profile - Resolved event profile
+ * @returns {object} Calculated planning context
  */
-export function runEngine(validatedRequest, referenceDate = new Date()) {
-  const profile = getProfile(validatedRequest.eventType);
-
-  // Time calculations
-  const eventDate = new Date(validatedRequest.eventDate);
+function buildContext(req, referenceDate, profile) {
+  const eventDate = new Date(req.eventDate);
   eventDate.setHours(0, 0, 0, 0);
 
   const today = new Date(referenceDate);
@@ -176,14 +26,14 @@ export function runEngine(validatedRequest, referenceDate = new Date()) {
   const diffMs = eventDate.getTime() - today.getTime();
   const daysToEvent = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
   const weeksToEvent = Math.max(0, Math.ceil(daysToEvent / CONSTANTS.TIMELINE.DAYS_PER_WEEK));
-  const eventMonth = eventDate.getMonth() + 1; // 1 - 12
+  const eventMonth = eventDate.getMonth() + 1;
 
-  const perGuest = validatedRequest.budget / validatedRequest.guests;
-  const costLevel = validatedRequest.costLevel || CONSTANTS.COST_LEVELS.AVERAGE;
+  const perGuest = req.budget / req.guests;
+  const costLevel = req.costLevel || CONSTANTS.COST_LEVELS.AVERAGE;
   const bands = profile.perGuestBands;
 
-  const context = {
-    request: validatedRequest,
+  return {
+    request: req,
     eventDate,
     today,
     daysToEvent,
@@ -194,128 +44,130 @@ export function runEngine(validatedRequest, referenceDate = new Date()) {
     bands,
     profile,
   };
+}
 
-  // Check if birthday child variant applies
-  let activeBudgetAllocation = { ...profile.budgetAllocation };
+/**
+ * Resolves the baseline allocation, selecting child variants where applicable.
+ *
+ * @param {object} profile - Event profile
+ * @param {object} req - Validated plan request
+ * @returns {Record<string, number>} Baseline category percentages
+ */
+function getActiveAllocation(profile, req) {
   if (profile.id === 'birthday' && profile.childBudgetAllocation) {
-    const age = validatedRequest.birthday?.age;
+    const age = req.birthday?.age;
     if (typeof age === 'number' && age <= CONSTANTS.BIRTHDAY.CHILD_AGE_MAX) {
-      activeBudgetAllocation = { ...profile.childBudgetAllocation };
+      return { ...profile.childBudgetAllocation };
     }
   }
+  return { ...profile.budgetAllocation };
+}
 
-  const firedRules = [];
-  const accumulatedShifts = {};
-  const warnings = [];
-  const priorityFlags = [];
-  const extraTasks = [];
-  const risks = [];
-  let evaluatedHealth = null;
+/**
+ * Executes a sequence of rule objects and updates accumulator state.
+ *
+ * @param {ReadonlyArray<object>} rules - Rule objects
+ * @param {object} context - Planning context
+ * @param {object} state - Mutable execution accumulator
+ * @param {string} defaultPrefix - Description prefix fallback
+ */
+function executeRuleSet(rules, context, state, defaultPrefix) {
+  for (const rule of rules) {
+    if (!rule.applies(context)) {
+      continue;
+    }
 
-  // 1. Run profile rules
-  for (const rule of profile.rules) {
-    if (rule.applies(context)) {
-      const output = rule.apply(context);
-      const effectText =
-        output.warnings && output.warnings.length > 0
-          ? output.warnings.join(' ')
-          : output.effect || `Applied ${rule.description}.`;
+    const output = rule.apply(context);
+    const effectText =
+      output.warnings && output.warnings.length > 0
+        ? output.warnings.join(' ')
+        : output.effect || `${defaultPrefix} ${rule.description}.`;
 
-      firedRules.push({
-        id: rule.id,
-        description: rule.description,
-        effect: effectText,
-      });
+    state.firedRules.push({
+      id: rule.id,
+      description: rule.description,
+      effect: effectText,
+    });
 
-      if (output.allocationShifts) {
-        for (const [cat, shift] of Object.entries(output.allocationShifts)) {
-          accumulatedShifts[cat] = (accumulatedShifts[cat] || 0) + shift;
-        }
-      }
-      if (output.warnings) {
-        warnings.push(...output.warnings);
-      }
-      if (output.priorityFlags) {
-        priorityFlags.push(...output.priorityFlags);
-      }
-      if (output.extraTasks) {
-        extraTasks.push(...output.extraTasks);
-      }
-      if (output.risks) {
-        risks.push(...output.risks);
+    if (output.allocationShifts) {
+      for (const [cat, shift] of Object.entries(output.allocationShifts)) {
+        state.accumulatedShifts[cat] = (state.accumulatedShifts[cat] || 0) + shift;
       }
     }
-  }
-
-  // 2. Run shared rules
-  for (const rule of SHARED_RULES) {
-    if (rule.applies(context)) {
-      const output = rule.apply(context);
-      const effectText =
-        output.warnings && output.warnings.length > 0
-          ? output.warnings.join(' ')
-          : output.effect || `Enforced ${rule.description}.`;
-
-      firedRules.push({
-        id: rule.id,
-        description: rule.description,
-        effect: effectText,
-      });
-
-      if (output.allocationShifts) {
-        for (const [cat, shift] of Object.entries(output.allocationShifts)) {
-          accumulatedShifts[cat] = (accumulatedShifts[cat] || 0) + shift;
-        }
-      }
-      if (output.warnings) {
-        warnings.push(...output.warnings);
-      }
-      if (output.priorityFlags) {
-        priorityFlags.push(...output.priorityFlags);
-      }
-      if (output.extraTasks) {
-        extraTasks.push(...output.extraTasks);
-      }
-      if (output.risks) {
-        risks.push(...output.risks);
-      }
-      if (output.budgetHealth) {
-        evaluatedHealth = output.budgetHealth;
-      }
+    if (output.warnings) {
+      state.warnings.push(...output.warnings);
+    }
+    if (output.priorityFlags) {
+      state.priorityFlags.push(...output.priorityFlags);
+    }
+    if (output.extraTasks) {
+      state.extraTasks.push(...output.extraTasks);
+    }
+    if (output.risks) {
+      state.risks.push(...output.risks);
+    }
+    if (output.budgetHealth) {
+      state.evaluatedHealth = output.budgetHealth;
     }
   }
+}
 
-  // Fallback health evaluation if not set by S-HEALTH
-  if (!evaluatedHealth) {
-    evaluatedHealth = computeHealth(perGuest, costLevel, bands);
-  }
-
-  // 3. Apply allocation shifts and enforce bounds
-  const rawAdjusted = { ...activeBudgetAllocation };
-  for (const [cat, shift] of Object.entries(accumulatedShifts)) {
+/**
+ * Reconciles category shifts and calculates exact Rupee amounts.
+ *
+ * @param {object} profile - Event profile
+ * @param {number} totalBudget - Total budget amount
+ * @param {Record<string, number>} baseAllocation - Base percentage map
+ * @param {Record<string, number>} shifts - Accumulated percentage shifts
+ * @param {object} health - Evaluated health structure
+ * @param {number} perGuest - Raw spend per guest
+ * @returns {object} Final budget object
+ */
+function buildPlanBudget(profile, totalBudget, baseAllocation, shifts, health, perGuest) {
+  const rawAdjusted = { ...baseAllocation };
+  for (const [cat, shift] of Object.entries(shifts)) {
     if (rawAdjusted[cat] !== undefined) {
       rawAdjusted[cat] = Math.max(0, rawAdjusted[cat] + shift);
     }
   }
 
-  // Enforce contingency floor
   rawAdjusted.contingency = Math.max(
     CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT,
     rawAdjusted.contingency || CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT,
   );
 
-  // 4. Reconcile budget to exact Rupee figures
-  const reconciledBudget = reconcile(validatedRequest.budget, rawAdjusted);
+  const reconciled = reconcile(totalBudget, rawAdjusted);
 
-  // 5. Build timeline with extra tasks
-  const timeline = buildTimeline(profile.timelineMilestones, validatedRequest.eventDate, today, extraTasks);
+  return {
+    total: reconciled.total,
+    perGuest: Math.round(perGuest),
+    health,
+    categories: reconciled.categories.map((c) => ({
+      id: c.id,
+      label: c.id.charAt(0).toUpperCase() + c.id.slice(1),
+      percent: c.percent,
+      amount: c.amount,
+      rationale: profile.templates?.rationales?.[c.id] || `Allocation for ${c.id}.`,
+      tips: profile.templates?.categoryTips?.[c.id] || [`Review and optimize ${c.id} options.`],
+    })),
+  };
+}
 
-  // 6. Build vendor category guidance
-  const vendors = profile.vendorCategories.map((vc) => {
+/**
+ * Builds vendor guidance list with priority flags and dates.
+ *
+ * @param {object} profile - Event profile
+ * @param {Date} eventDate - Event date
+ * @param {Date} today - Current reference date
+ * @param {string[]} priorityFlags - Category IDs flagged for urgent booking
+ * @param {number} weeksToEvent - Weeks remaining
+ * @returns {object[]} Vendor guidance list
+ */
+function buildPlanVendors(profile, eventDate, today, priorityFlags, weeksToEvent) {
+  return profile.vendorCategories.map((vc) => {
     const isPriority = priorityFlags.includes(vc.id) || weeksToEvent <= CONSTANTS.TIMELINE.URGENT_WEEKS;
     const bookByDateObj = new Date(eventDate);
     bookByDateObj.setDate(bookByDateObj.getDate() - Math.round(vc.bookWeeksBefore * CONSTANTS.TIMELINE.DAYS_PER_WEEK));
-    // If book by date is in past, clamp to today
     const bookByDate = bookByDateObj < today ? formatDate(today) : formatDate(bookByDateObj);
 
     return {
@@ -329,49 +181,75 @@ export function runEngine(validatedRequest, referenceDate = new Date()) {
         `Clarify payment milestones (advance, midpoint, post-completion handover).`,
       ],
       questions: profile.templates?.vendorQuestions?.[vc.id] || [
-        `What are your cancellation and reschedule terms?`,
-        `Is an on-site supervisor provided on event day?`,
+        'What are your cancellation and reschedule terms?',
+        'Is an on-site supervisor provided on event day?',
       ],
       redFlags: profile.templates?.vendorRedFlags?.[vc.id] || [
-        `Refusing to sign a formal written scope of work.`,
-        `Demanding 100% upfront payment before delivery.`,
+        'Refusing to sign a formal written scope of work.',
+        'Demanding 100% upfront payment before delivery.',
       ],
     };
   });
+}
 
-  // 7. Select top 3 risks by severity (ties broken by insertion order)
-  const sortedRisks = [...risks]
-    .sort((a, b) => b.severity - a.severity)
-    .slice(0, 3);
-
-  // Add default risk if none triggered
-  if (sortedRisks.length === 0) {
-    sortedRisks.push({
+/**
+ * Filters and caps top 3 risks by severity.
+ *
+ * @param {object[]} risks - Fired risks
+ * @returns {object[]} Top 3 risks
+ */
+function selectTopRisks(risks) {
+  const sorted = [...risks].sort((a, b) => b.severity - a.severity).slice(0, 3);
+  if (sorted.length === 0) {
+    sorted.push({
       id: 'budget-overrun',
       title: 'Unbudgeted Overtime & Incidental Expenses',
       severity: 1,
       mitigation: 'Keep the 5%+ contingency fund untouched until event day for sudden extra supplies.',
     });
   }
+  return sorted;
+}
+
+/**
+ * Runs the full deterministic decision engine pipeline.
+ * Target: under 40 lines.
+ *
+ * @param {object} validatedRequest - Request validated by requestSchema
+ * @param {Date} [referenceDate=new Date()] - Deterministic reference date for testing
+ * @returns {object} Calculated plan blueprint including allocations, health, rules, timeline, vendors, risks
+ */
+export function runEngine(validatedRequest, referenceDate = new Date()) {
+  const profile = getProfile(validatedRequest.eventType);
+  const context = buildContext(validatedRequest, referenceDate, profile);
+  const activeAllocation = getActiveAllocation(profile, validatedRequest);
+
+  const state = {
+    firedRules: [],
+    accumulatedShifts: {},
+    warnings: [],
+    priorityFlags: [],
+    extraTasks: [],
+    risks: [],
+    evaluatedHealth: null,
+  };
+
+  executeRuleSet(profile.rules, context, state, 'Applied');
+  executeRuleSet(SHARED_RULES, context, state, 'Enforced');
+
+  if (!state.evaluatedHealth) {
+    state.evaluatedHealth = computeHealth(context.perGuest, context.costLevel, context.bands);
+  }
+
+  const budget = buildPlanBudget(profile, validatedRequest.budget, activeAllocation, state.accumulatedShifts, state.evaluatedHealth, context.perGuest);
+  const timeline = buildTimeline(profile.timelineMilestones, validatedRequest.eventDate, context.today, state.extraTasks);
+  const vendors = buildPlanVendors(profile, context.eventDate, context.today, state.priorityFlags, context.weeksToEvent);
+  const risks = selectTopRisks(state.risks);
 
   return {
     profile,
     context,
-    budget: {
-      total: reconciledBudget.total,
-      perGuest: Math.round(perGuest),
-      health: evaluatedHealth,
-      categories: reconciledBudget.categories.map((c) => ({
-        id: c.id,
-        label: profile.templates?.rationales?.[c.id]
-          ? c.id.charAt(0).toUpperCase() + c.id.slice(1)
-          : c.id.charAt(0).toUpperCase() + c.id.slice(1),
-        percent: c.percent,
-        amount: c.amount,
-        rationale: profile.templates?.rationales?.[c.id] || `Allocation for ${c.id}.`,
-        tips: profile.templates?.categoryTips?.[c.id] || [`Review and optimize ${c.id} options.`],
-      })),
-    },
+    budget,
     timeline,
     vendors,
     ideas: profile.templates?.ideas || {
@@ -381,8 +259,8 @@ export function runEngine(validatedRequest, referenceDate = new Date()) {
       decor: ['Atmospheric Lighting'],
       extras: ['Guest Welcome Card'],
     },
-    warnings: Array.from(new Set(warnings)),
-    risks: sortedRisks,
-    firedRules,
+    warnings: Array.from(new Set(state.warnings)),
+    risks,
+    firedRules: state.firedRules,
   };
 }

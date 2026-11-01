@@ -28,80 +28,37 @@ export function formatDate(date) {
 }
 
 /**
- * Builds the event timeline from profile milestones and target event date.
- * Collapses past due milestones into a consolidated "Do now" group dated today.
- * Merges duplicate dates and sorts chronologically.
+ * Resolves custom or default tasks for a milestone.
  *
- * @param {Array<{ id: string, label: string, weeksBefore: number }>} profileMilestones
- * @param {string} eventDateStr - Target event date in YYYY-MM-DD format
- * @param {Date} [todayDate=new Date()] - Reference today date
- * @param {Array<{ milestoneId: string, title: string, detail: string }>} [extraTasks=[]] - Injected tasks
- * @returns {Array<{ id: string, label: string, dueDate: string, weeksLeft: number, urgent: boolean, tasks: Array<{ title: string, detail: string }> }>}
+ * @param {string} milestoneId
+ * @param {string} milestoneLabel
+ * @param {Array<{ milestoneId: string, title: string, detail: string }>} extraTasks
+ * @returns {Array<{ title: string, detail: string }>}
  */
-export function buildTimeline(profileMilestones, eventDateStr, todayDate = new Date(), extraTasks = []) {
-  const today = toMidnight(todayDate);
-  const eventDate = toMidnight(eventDateStr);
-  const todayStr = formatDate(today);
+function resolveMilestoneTasks(milestoneId, milestoneLabel, extraTasks) {
+  const assigned = extraTasks
+    .filter((t) => t.milestoneId === milestoneId)
+    .map((t) => ({ title: t.title, detail: t.detail }));
 
-  const pastDueTasks = [];
-  const futureMilestones = [];
-
-  for (const m of profileMilestones) {
-    const dueDate = new Date(eventDate);
-    const daysOffset = Math.round(m.weeksBefore * CONSTANTS.TIMELINE.DAYS_PER_WEEK);
-    dueDate.setDate(dueDate.getDate() - daysOffset);
-
-    // Collect custom tasks for this milestone
-    const assignedTasks = extraTasks
-      .filter((t) => t.milestoneId === m.id)
-      .map((t) => ({ title: t.title, detail: t.detail }));
-
-    // Default primary task if no custom tasks attached
-    if (assignedTasks.length === 0) {
-      assignedTasks.push({
-        title: `Execute: ${m.label}`,
-        detail: `Review requirements and confirm vendor/logistical commitments for "${m.label}".`,
-      });
-    }
-
-    if (dueDate < today) {
-      // Past milestone collapses into "Do now"
-      for (const t of assignedTasks) {
-        pastDueTasks.push(t);
-      }
-    } else {
-      const daysDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      const weeksLeft = Math.max(0, Math.ceil(daysDiff / CONSTANTS.TIMELINE.DAYS_PER_WEEK));
-      const urgent = weeksLeft <= CONSTANTS.TIMELINE.URGENT_WEEKS;
-
-      futureMilestones.push({
-        id: m.id,
-        label: m.label,
-        dueDate: formatDate(dueDate),
-        weeksLeft,
-        urgent,
-        tasks: assignedTasks,
-      });
-    }
-  }
-
-  const result = [];
-
-  // If there are past-due tasks, create the consolidated "Do Now" milestone
-  if (pastDueTasks.length > 0) {
-    result.push({
-      id: 'm-do-now',
-      label: 'Do Now: Immediate Catch-Up Actions',
-      dueDate: todayStr,
-      weeksLeft: 0,
-      urgent: true,
-      tasks: pastDueTasks,
+  if (assigned.length === 0) {
+    assigned.push({
+      title: `Execute: ${milestoneLabel}`,
+      detail: `Review requirements and confirm vendor/logistical commitments for "${milestoneLabel}".`,
     });
   }
+  return assigned;
+}
 
-  // Merge milestones sharing the exact same due date
+/**
+ * Merges milestones falling on the exact same calendar due date.
+ *
+ * @param {Array<{ id: string, label: string, dueDate: string, weeksLeft: number, urgent: boolean, tasks: Array<{ title: string, detail: string }> }>} milestones
+ * @returns {Array<{ id: string, label: string, dueDate: string, weeksLeft: number, urgent: boolean, tasks: Array<{ title: string, detail: string }> }>}
+ */
+function mergeDuplicateDates(milestones) {
   const dateMap = new Map();
-  for (const item of futureMilestones) {
+
+  for (const item of milestones) {
     if (dateMap.has(item.dueDate)) {
       const existing = dateMap.get(item.dueDate);
       existing.label = `${existing.label} & ${item.label}`;
@@ -112,12 +69,62 @@ export function buildTimeline(profileMilestones, eventDateStr, todayDate = new D
     }
   }
 
-  for (const item of dateMap.values()) {
-    result.push(item);
+  return Array.from(dateMap.values());
+}
+
+/**
+ * Builds the event timeline from profile milestones and target event date.
+ * Target: under 40 lines.
+ *
+ * @param {Array<{ id: string, label: string, weeksBefore: number }>} profileMilestones
+ * @param {string} eventDateStr - Target event date in YYYY-MM-DD format
+ * @param {Date} [todayDate=new Date()] - Reference today date
+ * @param {Array<{ milestoneId: string, title: string, detail: string }>} [extraTasks=[]] - Injected tasks
+ * @returns {Array<{ id: string, label: string, dueDate: string, weeksLeft: number, urgent: boolean, tasks: Array<{ title: string, detail: string }> }>}
+ */
+export function buildTimeline(profileMilestones, eventDateStr, todayDate = new Date(), extraTasks = []) {
+  const today = toMidnight(todayDate);
+  const eventDate = toMidnight(eventDateStr);
+
+  const pastDueTasks = [];
+  const futureMilestones = [];
+
+  for (const m of profileMilestones) {
+    const dueDate = new Date(eventDate);
+    dueDate.setDate(dueDate.getDate() - Math.round(m.weeksBefore * CONSTANTS.TIMELINE.DAYS_PER_WEEK));
+    const tasks = resolveMilestoneTasks(m.id, m.label, extraTasks);
+
+    if (dueDate < today) {
+      pastDueTasks.push(...tasks);
+    } else {
+      const daysDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const weeksLeft = Math.max(0, Math.ceil(daysDiff / CONSTANTS.TIMELINE.DAYS_PER_WEEK));
+      futureMilestones.push({
+        id: m.id,
+        label: m.label,
+        dueDate: formatDate(dueDate),
+        weeksLeft,
+        urgent: weeksLeft <= CONSTANTS.TIMELINE.URGENT_WEEKS,
+        tasks,
+      });
+    }
   }
 
-  // Sort ascending by date
-  result.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const result = [];
+  if (pastDueTasks.length > 0) {
+    result.push({
+      id: 'm-do-now',
+      label: 'Do Now: Immediate Catch-Up Actions',
+      dueDate: formatDate(today),
+      weeksLeft: 0,
+      urgent: true,
+      tasks: pastDueTasks,
+    });
+  }
+
+  const merged = mergeDuplicateDates(futureMilestones);
+  merged.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  result.push(...merged);
 
   return result;
 }
