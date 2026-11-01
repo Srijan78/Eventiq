@@ -43,6 +43,23 @@ function createFeedbackController(loadingRegion, globalErrorBox) {
 }
 
 /**
+ * Updates submit button disabled and busy states.
+ * @param {HTMLButtonElement|null} submitBtn
+ * @param {boolean} isBusy
+ */
+function setSubmitState(submitBtn, isBusy) {
+  if (!submitBtn) {
+    return;
+  }
+  submitBtn.disabled = isBusy;
+  if (isBusy) {
+    submitBtn.setAttribute('aria-busy', 'true');
+  } else {
+    submitBtn.removeAttribute('aria-busy');
+  }
+}
+
+/**
  * Handles form submission to generate a new event plan.
  *
  * @param {HTMLFormElement} form
@@ -64,10 +81,7 @@ function bindFormSubmit(form, resultsContainer, restoreNoticeBox, feedback) {
 
     try {
       isSubmitting = true;
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.setAttribute('aria-busy', 'true');
-      }
+      setSubmitState(submitBtn, true);
       feedback.showLoading(
         'Generating your customized event plan with AI. This may take up to 15 seconds...',
       );
@@ -86,10 +100,7 @@ function bindFormSubmit(form, resultsContainer, restoreNoticeBox, feedback) {
     } finally {
       isSubmitting = false;
       feedback.hideLoading();
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.removeAttribute('aria-busy');
-      }
+      setSubmitState(submitBtn, false);
     }
   });
 }
