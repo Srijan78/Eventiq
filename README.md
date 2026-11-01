@@ -207,6 +207,16 @@ npm run lint
 | `TRUST_PROXY`        | Number | `0`                     | Express trust proxy hop count for reverse proxies               |
 | `LOG_LEVEL`          | String | `info`                  | Pino logging level (`fatal`, `error`, `warn`, `info`, `debug`)  |
 
+### 5.2 Host-Agnostic Deployment
+
+Eventiq is strictly host-agnostic and runtime-neutral:
+
+- **Runtime Requirements:** Requires Node.js >= 20.0.0.
+- **Environment Variables:** Configured via `PORT`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `TRUST_PROXY`, and `NODE_ENV`.
+- **Container Ready:** The included multi-stage `Dockerfile` (Alpine Linux) executes as an unprivileged non-root `node` user and dynamically binds to the environment `PORT`.
+- **Serverless Ready:** The architecture cleanly isolates Express app assembly in `src/app.js` (no `app.listen()`) while `src/server.js` manages process lifecycle, enabling execution behind standard container runners or serverless adapters.
+- **Serverless Caveat:** _If deployed serverless, the in-memory cache and rate limiter are per instance and best-effort; shared state across instances would need an external store such as Redis._
+
 ---
 
 ## 6. API Reference
