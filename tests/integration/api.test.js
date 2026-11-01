@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import { app } from '../../src/app.js';
 import { dispatchRequest } from '../helpers/request.js';
 
+test('GET /: returns 200 with HTML frontend', async () => {
+  const res = await dispatchRequest(app, { url: '/' });
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  assert.ok(text.includes('<!doctype html>'));
+  assert.ok(text.includes('Eventiq'));
+});
+
 test('GET /health: returns 200 with server status', async () => {
   const res = await dispatchRequest(app, { url: '/health' });
   assert.equal(res.status, 200);

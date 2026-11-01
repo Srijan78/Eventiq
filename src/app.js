@@ -2,6 +2,8 @@
  * @fileoverview Express application assembly with security middleware, compression, and routes.
  */
 
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -12,6 +14,10 @@ import { router } from './routes/index.js';
 import { ENV } from './config/env.js';
 import { createGeminiService } from './services/geminiService.js';
 import { logger } from './utils/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicPath = path.resolve(__dirname, '../public');
 
 export const app = express();
 
@@ -59,8 +65,13 @@ app.use(express.json({ limit: CONSTANTS.VALIDATION.MAX_BODY_SIZE_BYTES }));
 // Request ID tracking
 app.use(requestIdMiddleware);
 
-// Serve static frontend assets
-app.use(express.static('public'));
+// Serve static frontend assets with absolute path for serverless bundling
+app.use(express.static(publicPath));
+
+// Serve frontend index.html on root GET
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
 
 // Mount API routes
 app.use(router);
