@@ -47,3 +47,4 @@ test('googleCalendarUrl: constructs valid URL with encoded parameters', () => {
   assert.ok(url.includes('Annual%20Gala%3A%20Lock%20Caterer'));
   assert.ok(url.includes('Verify%20vegetarian%20menu'));
 });
+

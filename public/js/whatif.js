@@ -110,3 +110,4 @@ export function initWhatIfControls(plan, container, onRecalculated) {
 
   container.appendChild(box);
 }
+

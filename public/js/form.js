@@ -254,3 +254,4 @@ export function populateForm(form, req) {
     setVal('#field-community-sponsorship', req.community.sponsorshipTarget);
   }
 }
+

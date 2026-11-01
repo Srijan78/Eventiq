@@ -72,7 +72,7 @@ export const CONSTANTS = Object.freeze({
   }),
 
   GEMINI: Object.freeze({
-    DEFAULT_MODEL: 'gemini-2.0-flash',
+    DEFAULT_MODEL: 'gemini-3.5-flash-lite',
     TIMEOUT_MS: 15000,
     MAX_RETRIES: 2,
     INITIAL_RETRY_DELAY_MS: 1000,

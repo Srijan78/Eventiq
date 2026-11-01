@@ -53,8 +53,8 @@ test('buildCacheKey: produces deterministic SHA-256 independent of key order and
     wedding: { dietary: 'vegetarian', functions: ['reception', 'wedding'] },
   };
 
-  const key1 = buildCacheKey(req1, 'gemini-2.0-flash', '2026-11-01');
-  const key2 = buildCacheKey(req2, 'gemini-2.0-flash', '2026-11-01');
+  const key1 = buildCacheKey(req1, 'gemini-3.5-flash-lite', '2026-11-01');
+  const key2 = buildCacheKey(req2, 'gemini-3.5-flash-lite', '2026-11-01');
 
   assert.equal(key1, key2, 'Normalized cache keys must be strictly identical');
 });
@@ -67,7 +67,8 @@ test('buildCacheKey: differs when today date or inputs change', () => {
     budget: 25000,
   };
 
-  const keyDay1 = buildCacheKey(req, 'gemini-2.0-flash', '2026-11-01');
-  const keyDay2 = buildCacheKey(req, 'gemini-2.0-flash', '2026-11-02');
+  const keyDay1 = buildCacheKey(req, 'gemini-3.5-flash-lite', '2026-11-01');
+  const keyDay2 = buildCacheKey(req, 'gemini-3.5-flash-lite', '2026-11-02');
   assert.notEqual(keyDay1, keyDay2, 'Cache keys must differ across dates due to weeksToEvent');
 });
+

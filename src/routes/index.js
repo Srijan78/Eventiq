@@ -29,3 +29,4 @@ router.post('/api/plan/whatif', generalLimiter, validate(requestSchema), whatifC
 
 // iCalendar (.ics) export
 router.post('/api/export/ics', generalLimiter, exportController.exportIcs);
+

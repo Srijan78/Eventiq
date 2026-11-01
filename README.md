@@ -192,7 +192,7 @@ npm run lint
 | `PORT` | Number | `3000` | HTTP port for the web server |
 | `NODE_ENV` | String | `development` | Node runtime environment |
 | `GEMINI_API_KEY` | String | `""` | Optional Google Gemini API key. If absent, offline mode is used |
-| `GEMINI_MODEL` | String | `gemini-2.0-flash` | Gemini model name |
+| `GEMINI_MODEL` | String | `gemini-3.5-flash-lite` | Gemini model name |
 | `CACHE_TTL_SECONDS` | Number | `3600` | In-memory plan cache TTL (1 hour) |
 | `CACHE_MAX_ENTRIES` | Number | `100` | Maximum cached plans in LRU cache |
 | `RATE_LIMIT_PER_MIN` | Number | `60` | Max API requests per IP per minute |

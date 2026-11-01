@@ -44,3 +44,4 @@ export function initChecklist(planId, container) {
     });
   }
 }
+

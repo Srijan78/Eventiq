@@ -74,3 +74,4 @@ Generate 2 sharp interview questions and 2 contract red flags for each vendor ca
     responseSchema: vendorGuidanceResponseSchema,
   };
 }
+

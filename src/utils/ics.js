@@ -117,3 +117,4 @@ export function googleCalendarUrl(milestone, eventName = 'Eventiq Plan') {
 
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${startDate}/${endDate}&details=${details}`;
 }
+

@@ -27,3 +27,4 @@ export const whatifController = Object.freeze({
     }
   },
 });
+
