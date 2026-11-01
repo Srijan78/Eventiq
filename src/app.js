@@ -59,11 +59,11 @@ app.use(
 // Gzip compression
 app.use(compression());
 
+// Request ID tracking (runs before body parsing so all errors include requestId)
+app.use(requestIdMiddleware);
+
 // Body size cap: strictly 20 KB per PRD
 app.use(express.json({ limit: CONSTANTS.VALIDATION.MAX_BODY_SIZE_BYTES }));
-
-// Request ID tracking
-app.use(requestIdMiddleware);
 
 // Serve static frontend assets with absolute path for serverless bundling
 app.use(express.static(publicPath));

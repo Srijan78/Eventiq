@@ -87,7 +87,7 @@ function resolvePayloadError(err, requestId) {
       status: 413,
       body: {
         error: {
-          code: 'VALIDATION_ERROR',
+          code: 'PAYLOAD_TOO_LARGE',
           message: 'Request payload exceeds maximum permitted size (20 KB)',
           details: [],
           requestId,

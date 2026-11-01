@@ -144,7 +144,7 @@ test('POST /api/plan: returns 400 VALIDATION_ERROR with standardized shape for i
   assert.equal(data.error.stack, undefined, 'Stack traces must never leak to client');
 });
 
-test('POST /api/plan: returns 413 VALIDATION_ERROR when request payload exceeds 20 KB limit', async () => {
+test('POST /api/plan: returns 413 PAYLOAD_TOO_LARGE when request payload exceeds 20 KB limit', async () => {
   const hugeNotes = 'Z'.repeat(25000); // 25 KB body
   const res = await dispatchRequest(app, {
     method: 'POST',
@@ -160,7 +160,9 @@ test('POST /api/plan: returns 413 VALIDATION_ERROR when request payload exceeds 
 
   assert.equal(res.status, 413);
   const data = await res.json();
-  assert.equal(data.error.code, 'VALIDATION_ERROR');
+  assert.equal(data.error.code, 'PAYLOAD_TOO_LARGE');
+  assert.ok(data.error.requestId, 'requestId must be present on 413 responses');
+  assert.notEqual(data.error.requestId, '');
   assert.ok(data.error.message.includes('exceeds maximum permitted size'));
 });
 
