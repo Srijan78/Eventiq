@@ -1,5 +1,6 @@
 # Eventiq: GenAI-Powered Event Planning Assistant
 
+[![CI](https://github.com/Srijan78/Eventiq/actions/workflows/ci.yml/badge.svg)](https://github.com/Srijan78/Eventiq/actions/workflows/ci.yml)
 Live demo: https://eventiq-inky.vercel.app
 
 Eventiq generates complete, mathematically sound event plans for weddings, birthdays, community gatherings, or any custom event, delivering deterministic budget allocations, milestone timelines, vendor checklists, and creative ideas.
