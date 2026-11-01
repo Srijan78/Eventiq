@@ -1,0 +1,130 @@
+/**
+ * @fileoverview Google Gemini AI integration with bounded retries, timeouts, and Zod schema validation.
+ */
+
+import { GoogleGenAI } from '@google/genai';
+import { CONSTANTS } from '../config/constants.js';
+import { logger } from '../utils/logger.js';
+import { buildBudgetIdeasPrompt, budgetIdeasResponseSchema } from '../prompts/budgetIdeasPrompt.js';
+import { buildTimelinePrompt, timelineTasksResponseSchema } from '../prompts/timelinePrompt.js';
+import { buildVendorPrompt, vendorGuidanceResponseSchema } from '../prompts/vendorPrompt.js';
+
+/**
+ * Executes an async operation with timeout and exponential backoff retry.
+ *
+ * @template T
+ * @param {() => Promise<T>} task
+ * @param {string} taskName
+ * @param {number} [maxRetries=CONSTANTS.GEMINI.MAX_RETRIES]
+ * @param {number} [timeoutMs=CONSTANTS.GEMINI.TIMEOUT_MS]
+ * @returns {Promise<T>}
+ */
+async function executeWithRetry(
+  task,
+  taskName,
+  maxRetries = CONSTANTS.GEMINI.MAX_RETRIES,
+  timeoutMs = CONSTANTS.GEMINI.TIMEOUT_MS,
+) {
+  let attempt = 0;
+  let delay = CONSTANTS.GEMINI.INITIAL_RETRY_DELAY_MS;
+
+  while (attempt <= maxRetries) {
+    try {
+      // Race task against timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error(`Operation "${taskName}" timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+        timer.unref?.();
+      });
+
+      return await Promise.race([task(), timeoutPromise]);
+    } catch (err) {
+      attempt++;
+      if (attempt > maxRetries) {
+        logger.error({ taskName, attempts: attempt, err: err.message }, 'Gemini task failed after max retries');
+        throw err;
+      }
+
+      logger.warn(
+        { taskName, attempt, nextRetryDelayMs: delay, err: err.message },
+        'Gemini task attempt failed, retrying with backoff',
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay *= 2;
+    }
+  }
+
+  throw new Error(`Exhausted retries for ${taskName}`);
+}
+
+/**
+ * Creates an instance of the Gemini AI Service.
+ *
+ * @param {string} apiKey - Gemini API Key
+ * @param {string} [modelName=CONSTANTS.GEMINI.DEFAULT_MODEL]
+ * @returns {{ generateContent: (engineResult: object, req: object) => Promise<object> }}
+ */
+export function createGeminiService(apiKey, modelName = CONSTANTS.GEMINI.DEFAULT_MODEL) {
+  const ai = new GoogleGenAI({ apiKey });
+
+  /**
+   * Helper that executes a prompt, parses the JSON response, and validates it against a Zod schema.
+   */
+  async function callStructuredModel(promptData, schema, callName) {
+    return executeWithRetry(async () => {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: promptData.prompt,
+        config: {
+          systemInstruction: promptData.systemInstruction,
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const rawText = response.text || '';
+      let parsedJson;
+      try {
+        parsedJson = JSON.parse(rawText);
+      } catch (parseErr) {
+        throw new Error(`Gemini returned invalid non-JSON output for ${callName}: ${parseErr.message}`, {
+          cause: parseErr,
+        });
+      }
+
+      // Strict validation against Zod schema
+      return schema.parse(parsedJson);
+    }, callName);
+  }
+
+  return Object.freeze({
+    /**
+     * Executes the 3 independent Gemini calls in parallel via Promise.all.
+     *
+     * @param {object} engineResult - Deterministic decision engine output
+     * @param {object} req - Sanitized request payload
+     * @returns {Promise<object>} Consolidated AI content
+     */
+    async generateContent(engineResult, req) {
+      logger.info({ model: modelName }, 'Initiating 3 parallel Gemini calls');
+
+      const budgetIdeasPrompt = buildBudgetIdeasPrompt(engineResult, req);
+      const timelinePrompt = buildTimelinePrompt(engineResult, req);
+      const vendorPrompt = buildVendorPrompt(engineResult, req);
+
+      // Run in parallel
+      const [budgetIdeasResult, timelineResult, vendorResult] = await Promise.all([
+        callStructuredModel(budgetIdeasPrompt, budgetIdeasResponseSchema, 'BudgetIdeasCall'),
+        callStructuredModel(timelinePrompt, timelineTasksResponseSchema, 'TimelineTasksCall'),
+        callStructuredModel(vendorPrompt, vendorGuidanceResponseSchema, 'VendorGuidanceCall'),
+      ]);
+
+      return {
+        categories: budgetIdeasResult.categories,
+        ideas: budgetIdeasResult.ideas,
+        timelineTasks: timelineResult.timelineTasks,
+        vendorGuidance: vendorResult.vendorGuidance,
+      };
+    },
+  });
+}

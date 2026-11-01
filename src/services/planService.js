@@ -6,7 +6,9 @@ import { randomUUID } from 'node:crypto';
 import { runEngine } from './decisionEngine.js';
 import { sanitizeRequest } from '../utils/sanitize.js';
 import { validatePlan } from '../schemas/planSchema.js';
+import { planCache, buildCacheKey } from '../utils/cache.js';
 import { logger } from '../utils/logger.js';
+import { ENV } from '../config/env.js';
 
 /**
  * Builds a natural-language contextual summary string.
@@ -27,6 +29,7 @@ function buildSummary(req, engine) {
 
 /**
  * Generates an event plan. Executes decision engine and merges content.
+ * Checks LRU cache for identical requests.
  * Gracefully defaults to deterministic offline templates if AI service is not provided or fails.
  *
  * @param {object} validatedRequest - Input validated by requestSchema
@@ -35,6 +38,15 @@ function buildSummary(req, engine) {
  */
 export async function generatePlan(validatedRequest, options = {}) {
   const sanitized = sanitizeRequest(validatedRequest);
+
+  // Check cache for identical AI-mode plan (Section 9.7)
+  const cacheKey = buildCacheKey(sanitized, ENV.GEMINI_MODEL);
+  const cachedPlan = planCache.get(cacheKey);
+  if (cachedPlan) {
+    logger.info({ cacheKey, eventType: sanitized.eventType }, 'Serving plan from LRU cache');
+    return cachedPlan;
+  }
+
   logger.info({ eventType: sanitized.eventType, guests: sanitized.guests }, 'Executing decision engine');
 
   // Step 1: Execute deterministic decision engine
@@ -117,5 +129,12 @@ export async function generatePlan(validatedRequest, options = {}) {
   };
 
   // Step 4: Validate plan against strict planSchema
-  return validatePlan(rawPlan);
+  const validatedPlan = validatePlan(rawPlan);
+
+  // Cache AI-generated plans (Section 9.7: offline plans are not cached)
+  if (mode === 'ai') {
+    planCache.set(cacheKey, validatedPlan);
+  }
+
+  return validatedPlan;
 }
