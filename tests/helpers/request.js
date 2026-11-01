@@ -1,9 +1,51 @@
 /**
- * @fileoverview In-memory HTTP request dispatcher for offline zero-socket integration testing.
+ * @fileoverview In-memory HTTP request dispatcher and test fixtures for offline zero-socket testing.
  */
 
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { Socket } from 'node:net';
+
+/**
+ * Returns an ISO date string (YYYY-MM-DD) for N days in the future.
+ * @param {number} [daysAhead=60]
+ * @returns {string}
+ */
+export function futureDate(daysAhead = 60) {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return d.toISOString().split('T')[0];
+}
+
+/**
+ * Creates a valid, schema-compliant request payload for testing.
+ * @param {'wedding'|'birthday'|'community'|'other'} [eventType='wedding']
+ * @param {Record<string, any>} [overrides={}]
+ * @returns {Record<string, any>}
+ */
+export function createValidRequest(eventType = 'wedding', overrides = {}) {
+  const base = {
+    eventType,
+    eventDate: futureDate(60),
+    guests: 120,
+    budget: 300000,
+    city: 'Bengaluru',
+    costLevel: 'average',
+    theme: 'Celebration',
+    notes: 'Strict schedule required',
+  };
+
+  if (eventType === 'wedding') {
+    base.wedding = { functions: ['wedding', 'reception'], indoor: true, dietary: 'Vegetarian' };
+  } else if (eventType === 'birthday') {
+    base.birthday = { ageGroup: 'kids', childAge: 7, homeParty: false };
+  } else if (eventType === 'community') {
+    base.community = { cause: 'Cultural Fest', outdoor: true, expectedTurnout: 150 };
+  } else if (eventType === 'other') {
+    base.eventName = 'Annual Product Hackathon';
+  }
+
+  return { ...base, ...overrides };
+}
 
 /**
  * Dispatches an HTTP request directly into an Express app in-memory.
@@ -68,12 +110,12 @@ export function dispatchRequest(app, options = {}) {
 
       app.handle(req, res);
 
-      if (bodyBuffer) {
-        req.emit('data', bodyBuffer);
+      setImmediate(() => {
+        if (bodyBuffer) {
+          req.emit('data', bodyBuffer);
+        }
         req.emit('end');
-      } else {
-        req.emit('end');
-      }
+      });
     } catch (err) {
       reject(err);
     }

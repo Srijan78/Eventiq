@@ -137,9 +137,9 @@ export function buildTimeline(
     extraTasks,
   );
 
-  const result = [];
+  const allMilestones = [];
   if (pastDueTasks.length > 0) {
-    result.push({
+    allMilestones.push({
       id: 'm-do-now',
       label: 'Do Now: Immediate Catch-Up Actions',
       dueDate: formatDate(today),
@@ -148,10 +148,9 @@ export function buildTimeline(
       tasks: pastDueTasks,
     });
   }
+  allMilestones.push(...futureMilestones);
 
-  const merged = mergeDuplicateDates(futureMilestones);
+  const merged = mergeDuplicateDates(allMilestones);
   merged.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-  result.push(...merged);
-
-  return result;
+  return merged;
 }
