@@ -36,6 +36,143 @@ export function notFoundHandler(req, res) {
 }
 
 /**
+ * Formats Zod validation issues into an HTTP 400 response.
+ *
+ * @param {ZodError} err
+ * @param {string} requestId
+ * @returns {{ status: number, body: object }}
+ */
+function formatZodResponse(err, requestId) {
+  const message = formatZodMessage(err.issues);
+  logger.warn({ requestId, issues: err.issues }, 'Validation error');
+  return {
+    status: 400,
+    body: {
+      error: {
+        code: 'VALIDATION_ERROR',
+        message,
+        details: err.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+        requestId,
+      },
+    },
+  };
+}
+
+/**
+ * Formats client-attributable errors (Zod, SyntaxError, PayloadTooLarge).
+ *
+ * @param {Error} err
+ * @param {string} requestId
+ * @returns {{ status: number, body: object } | null}
+ */
+function resolveClientError(err, requestId) {
+  if (err instanceof ZodError) {
+    return formatZodResponse(err, requestId);
+  }
+
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    logger.warn({ requestId, err: err.message }, 'Malformed JSON body');
+    return {
+      status: 400,
+      body: {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Malformed JSON payload in request body',
+          details: [],
+          requestId,
+        },
+      },
+    };
+  }
+
+  if (err.type === 'entity.too.large') {
+    logger.warn({ requestId }, 'Request entity too large');
+    return {
+      status: 413,
+      body: {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Request payload exceeds maximum permitted size (20 KB)',
+          details: [],
+          requestId,
+        },
+      },
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Resolves gateway or rate limit errors.
+ *
+ * @param {Error} err
+ * @param {string} requestId
+ * @returns {{ status: number, body: object } | null}
+ */
+function resolveSpecialServerStatus(err, requestId) {
+  if (err.status === 429) {
+    return {
+      status: 429,
+      body: {
+        error: {
+          code: 'RATE_LIMITED',
+          message: err.message || 'Rate limit exceeded',
+          details: [],
+          requestId,
+        },
+      },
+    };
+  }
+  if (err.status === 503 || err.code === 'UPSTREAM_UNAVAILABLE') {
+    logger.error({ requestId, err: err.message }, 'Upstream service unavailable');
+    return {
+      status: 503,
+      body: {
+        error: {
+          code: 'UPSTREAM_UNAVAILABLE',
+          message:
+            'The AI planning service is temporarily unavailable. Please retry or use offline mode.',
+          details: [],
+          requestId,
+        },
+      },
+    };
+  }
+  return null;
+}
+
+/**
+ * Formats rate limit, upstream, or generic 500 errors.
+ *
+ * @param {Error} err
+ * @param {string} requestId
+ * @returns {{ status: number, body: object }}
+ */
+function resolveServerError(err, requestId) {
+  const special = resolveSpecialServerStatus(err, requestId);
+  if (special) {
+    return special;
+  }
+
+  logger.error(
+    { requestId, err: err.message, stack: err.stack },
+    'Unhandled internal server error',
+  );
+  return {
+    status: 500,
+    body: {
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'An internal server error occurred while processing your request.',
+        details: [],
+        requestId,
+      },
+    },
+  };
+}
+
+/**
  * Global Express error handling middleware.
  * Formats all errors into standard JSON structure without exposing stack traces.
  *
@@ -46,87 +183,11 @@ export function notFoundHandler(req, res) {
  */
 export function errorHandler(err, req, res, _next) {
   const requestId = req.id || '';
-
-  // 1. Zod Validation Errors
-  if (err instanceof ZodError) {
-    const message = formatZodMessage(err.issues);
-    logger.warn({ requestId, issues: err.issues }, 'Validation error');
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message,
-        details: err.issues.map((i) => ({
-          path: i.path.join('.'),
-          message: i.message,
-        })),
-        requestId,
-      },
-    });
+  const clientResponse = resolveClientError(err, requestId);
+  if (clientResponse) {
+    return res.status(clientResponse.status).json(clientResponse.body);
   }
 
-  // 2. SyntaxError (malformed JSON payload)
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    logger.warn({ requestId, err: err.message }, 'Malformed JSON body');
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Malformed JSON payload in request body',
-        details: [],
-        requestId,
-      },
-    });
-  }
-
-  // 3. Payload Too Large
-  if (err.type === 'entity.too.large') {
-    logger.warn({ requestId }, 'Request entity too large');
-    return res.status(413).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Request payload exceeds maximum permitted size (20 KB)',
-        details: [],
-        requestId,
-      },
-    });
-  }
-
-  // 4. Rate limiting (if forwarded as error)
-  if (err.status === 429) {
-    return res.status(429).json({
-      error: {
-        code: 'RATE_LIMITED',
-        message: err.message || 'Rate limit exceeded',
-        details: [],
-        requestId,
-      },
-    });
-  }
-
-  // 5. Upstream Service Errors
-  if (err.status === 503 || err.code === 'UPSTREAM_UNAVAILABLE') {
-    logger.error({ requestId, err: err.message }, 'Upstream service unavailable');
-    return res.status(503).json({
-      error: {
-        code: 'UPSTREAM_UNAVAILABLE',
-        message:
-          'The AI planning service is temporarily unavailable. Please retry or use offline mode.',
-        details: [],
-        requestId,
-      },
-    });
-  }
-
-  // 6. Generic Internal Server Errors
-  logger.error(
-    { requestId, err: err.message, stack: err.stack },
-    'Unhandled internal server error',
-  );
-  return res.status(500).json({
-    error: {
-      code: 'INTERNAL_ERROR',
-      message: 'An internal server error occurred while processing your request.',
-      details: [],
-      requestId,
-    },
-  });
+  const serverResponse = resolveServerError(err, requestId);
+  return res.status(serverResponse.status).json(serverResponse.body);
 }

@@ -73,24 +73,15 @@ function mergeDuplicateDates(milestones) {
 }
 
 /**
- * Builds the event timeline from profile milestones and target event date.
- * Target: under 40 lines.
+ * Partitions milestones into past-due tasks and scheduled future milestones.
  *
- * @param {Array<{ id: string, label: string, weeksBefore: number }>} profileMilestones
- * @param {string} eventDateStr - Target event date in YYYY-MM-DD format
- * @param {Date} [todayDate=new Date()] - Reference today date
- * @param {Array<{ milestoneId: string, title: string, detail: string }>} [extraTasks=[]] - Injected tasks
- * @returns {Array<{ id: string, label: string, dueDate: string, weeksLeft: number, urgent: boolean, tasks: Array<{ title: string, detail: string }> }>}
+ * @param {Array<object>} profileMilestones
+ * @param {Date} eventDate
+ * @param {Date} today
+ * @param {Array<object>} extraTasks
+ * @returns {{ pastDueTasks: Array<object>, futureMilestones: Array<object> }}
  */
-export function buildTimeline(
-  profileMilestones,
-  eventDateStr,
-  todayDate = new Date(),
-  extraTasks = [],
-) {
-  const today = toMidnight(todayDate);
-  const eventDate = toMidnight(eventDateStr);
-
+function partitionMilestones(profileMilestones, eventDate, today, extraTasks) {
   const pastDueTasks = [];
   const futureMilestones = [];
 
@@ -116,6 +107,34 @@ export function buildTimeline(
       });
     }
   }
+
+  return { pastDueTasks, futureMilestones };
+}
+
+/**
+ * Builds the event timeline from profile milestones and target event date.
+ * Target: under 40 lines.
+ *
+ * @param {Array<{ id: string, label: string, weeksBefore: number }>} profileMilestones
+ * @param {string} eventDateStr - Target event date in YYYY-MM-DD format
+ * @param {Date} [todayDate=new Date()] - Reference today date
+ * @param {Array<{ milestoneId: string, title: string, detail: string }>} [extraTasks=[]] - Injected tasks
+ * @returns {Array<{ id: string, label: string, dueDate: string, weeksLeft: number, urgent: boolean, tasks: Array<{ title: string, detail: string }> }>}
+ */
+export function buildTimeline(
+  profileMilestones,
+  eventDateStr,
+  todayDate = new Date(),
+  extraTasks = [],
+) {
+  const today = toMidnight(todayDate);
+  const eventDate = toMidnight(eventDateStr);
+  const { pastDueTasks, futureMilestones } = partitionMilestones(
+    profileMilestones,
+    eventDate,
+    today,
+    extraTasks,
+  );
 
   const result = [];
   if (pastDueTasks.length > 0) {

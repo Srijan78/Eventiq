@@ -20,22 +20,7 @@ export const timelineTasksResponseSchema = z.object({
   ),
 });
 
-/**
- * Builds prompt and schema for milestone task breakdowns.
- *
- * @param {object} engineResult
- * @param {object} req
- * @returns {{ systemInstruction: string, prompt: string, responseSchema: object }}
- */
-export function buildTimelinePrompt(engineResult, req) {
-  const milestonesList = engineResult.timeline
-    .map(
-      (m) =>
-        `- Milestone ID: "${m.id}", Label: "${m.label}", Due Date: ${m.dueDate} (${m.weeksLeft} weeks left, Urgent: ${m.urgent})`,
-    )
-    .join('\n');
-
-  const systemInstruction = `You are Eventiq, a structured operational planning assistant.
+const SYSTEM_INSTRUCTION = `You are Eventiq, a structured operational planning assistant.
 Your task is to produce 2 actionable, high-priority tasks for each pre-computed milestone in an event timeline.
 
 CRITICAL SECURITY RULES:
@@ -57,6 +42,21 @@ Return valid JSON matching this structure:
   ]
 }`;
 
+/**
+ * Builds prompt and schema for milestone task breakdowns.
+ *
+ * @param {object} engineResult
+ * @param {object} req
+ * @returns {{ systemInstruction: string, prompt: string, responseSchema: object }}
+ */
+export function buildTimelinePrompt(engineResult, req) {
+  const milestonesList = engineResult.timeline
+    .map(
+      (m) =>
+        `- Milestone ID: "${m.id}", Label: "${m.label}", Due Date: ${m.dueDate} (${m.weeksLeft} weeks left, Urgent: ${m.urgent})`,
+    )
+    .join('\n');
+
   const prompt = `Event Details:
 - Type: ${req.eventType} (${req.eventName || engineResult.profile.label})
 - Target Date: ${req.eventDate}
@@ -74,7 +74,7 @@ Notes: ${req.notes || 'None'}
 Generate 1-2 distinct, actionable tasks for each milestone ID listed above.`;
 
   return {
-    systemInstruction,
+    systemInstruction: SYSTEM_INSTRUCTION,
     prompt,
     responseSchema: timelineTasksResponseSchema,
   };

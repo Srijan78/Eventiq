@@ -62,6 +62,48 @@ async function executeWithRetry(
 }
 
 /**
+ * Parses model raw output as JSON and validates against Zod schema.
+ *
+ * @param {string} rawText
+ * @param {import('zod').ZodType} schema
+ * @param {string} callName
+ * @returns {any}
+ */
+function parseAndValidateModelOutput(rawText, schema, callName) {
+  let parsedJson;
+  try {
+    parsedJson = JSON.parse(rawText || '');
+  } catch (parseErr) {
+    throw new Error(
+      `Gemini returned invalid non-JSON output for ${callName}: ${parseErr.message}`,
+      { cause: parseErr },
+    );
+  }
+  return schema.parse(parsedJson);
+}
+
+/**
+ * Executes a structured Gemini call with timeout and retries.
+ *
+ * @param {{ ai: GoogleGenAI, modelName: string, promptData: object, schema: import('zod').ZodType, callName: string }} options
+ * @returns {Promise<any>}
+ */
+async function executeStructuredCall({ ai, modelName, promptData, schema, callName }) {
+  return executeWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: promptData.prompt,
+      config: {
+        systemInstruction: promptData.systemInstruction,
+        responseMimeType: 'application/json',
+      },
+    });
+
+    return parseAndValidateModelOutput(response.text || '', schema, callName);
+  }, callName);
+}
+
+/**
  * Creates an instance of the Gemini AI Service.
  *
  * @param {string} apiKey - Gemini API Key
@@ -70,38 +112,6 @@ async function executeWithRetry(
  */
 export function createGeminiService(apiKey, modelName = CONSTANTS.GEMINI.DEFAULT_MODEL) {
   const ai = new GoogleGenAI({ apiKey });
-
-  /**
-   * Helper that executes a prompt, parses the JSON response, and validates it against a Zod schema.
-   */
-  async function callStructuredModel(promptData, schema, callName) {
-    return executeWithRetry(async () => {
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: promptData.prompt,
-        config: {
-          systemInstruction: promptData.systemInstruction,
-          responseMimeType: 'application/json',
-        },
-      });
-
-      const rawText = response.text || '';
-      let parsedJson;
-      try {
-        parsedJson = JSON.parse(rawText);
-      } catch (parseErr) {
-        throw new Error(
-          `Gemini returned invalid non-JSON output for ${callName}: ${parseErr.message}`,
-          {
-            cause: parseErr,
-          },
-        );
-      }
-
-      // Strict validation against Zod schema
-      return schema.parse(parsedJson);
-    }, callName);
-  }
 
   return Object.freeze({
     /**
@@ -118,11 +128,28 @@ export function createGeminiService(apiKey, modelName = CONSTANTS.GEMINI.DEFAULT
       const timelinePrompt = buildTimelinePrompt(engineResult, req);
       const vendorPrompt = buildVendorPrompt(engineResult, req);
 
-      // Run in parallel
       const [budgetIdeasResult, timelineResult, vendorResult] = await Promise.all([
-        callStructuredModel(budgetIdeasPrompt, budgetIdeasResponseSchema, 'BudgetIdeasCall'),
-        callStructuredModel(timelinePrompt, timelineTasksResponseSchema, 'TimelineTasksCall'),
-        callStructuredModel(vendorPrompt, vendorGuidanceResponseSchema, 'VendorGuidanceCall'),
+        executeStructuredCall({
+          ai,
+          modelName,
+          promptData: budgetIdeasPrompt,
+          schema: budgetIdeasResponseSchema,
+          callName: 'BudgetIdeasCall',
+        }),
+        executeStructuredCall({
+          ai,
+          modelName,
+          promptData: timelinePrompt,
+          schema: timelineTasksResponseSchema,
+          callName: 'TimelineTasksCall',
+        }),
+        executeStructuredCall({
+          ai,
+          modelName,
+          promptData: vendorPrompt,
+          schema: vendorGuidanceResponseSchema,
+          callName: 'VendorGuidanceCall',
+        }),
       ]);
 
       return {

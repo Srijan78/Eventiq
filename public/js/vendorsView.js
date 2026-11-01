@@ -30,6 +30,29 @@ function createVendorChecklist(v) {
 }
 
 /**
+ * Appends a bullet list section to a vendor card if items exist.
+ *
+ * @param {HTMLElement} card
+ * @param {string} title
+ * @param {string[]} items
+ * @param {boolean} [isDanger=false]
+ */
+function appendVendorList(card, title, items, isDanger = false) {
+  if (!items || items.length === 0) {
+    return;
+  }
+  const titleClass = isDanger ? 'sub-heading sub-heading-danger' : 'sub-heading';
+  const listClass = isDanger ? 'bullet-list red-flags-list' : 'bullet-list';
+
+  card.appendChild(el('h4', titleClass, title));
+  const list = el('ul', listClass);
+  for (const item of items) {
+    list.appendChild(el('li', '', item));
+  }
+  card.appendChild(list);
+}
+
+/**
  * Creates a single vendor category card.
  *
  * @param {object} v - Vendor category item
@@ -39,12 +62,10 @@ function createVendorCard(v) {
   const card = el('div', 'vendor-card');
   const cardHead = el('div', 'vendor-card-header');
   cardHead.appendChild(el('h3', 'vendor-title', v.label));
-  const prioBadge = el(
-    'span',
-    `badge ${v.priority === 'immediate' ? 'badge-urgent' : 'badge-normal'}`,
-    v.priority === 'immediate' ? 'Lock In Now' : `Book by: ${v.bookByDate}`,
-  );
-  cardHead.appendChild(prioBadge);
+
+  const badgeClass = v.priority === 'immediate' ? 'badge-urgent' : 'badge-normal';
+  const badgeText = v.priority === 'immediate' ? 'Lock In Now' : `Book by: ${v.bookByDate}`;
+  cardHead.appendChild(el('span', `badge ${badgeClass}`, badgeText));
   card.appendChild(cardHead);
 
   if (v.checklist && v.checklist.length > 0) {
@@ -52,23 +73,8 @@ function createVendorCard(v) {
     card.appendChild(createVendorChecklist(v));
   }
 
-  if (v.questions && v.questions.length > 0) {
-    card.appendChild(el('h4', 'sub-heading', 'Key Questions to Ask'));
-    const qList = el('ul', 'bullet-list');
-    for (const q of v.questions) {
-      qList.appendChild(el('li', '', q));
-    }
-    card.appendChild(qList);
-  }
-
-  if (v.redFlags && v.redFlags.length > 0) {
-    card.appendChild(el('h4', 'sub-heading sub-heading-danger', 'Red Flags to Avoid'));
-    const rfList = el('ul', 'bullet-list red-flags-list');
-    for (const rf of v.redFlags) {
-      rfList.appendChild(el('li', '', rf));
-    }
-    card.appendChild(rfList);
-  }
+  appendVendorList(card, 'Key Questions to Ask', v.questions, false);
+  appendVendorList(card, 'Red Flags to Avoid', v.redFlags, true);
 
   return card;
 }

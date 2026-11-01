@@ -343,6 +343,10 @@ body {
   font-size: 0.85rem;
 }
 
+.btn-dismiss {
+  margin-left: 8px;
+}
+
 .btn-block {
   width: 100%;
 }

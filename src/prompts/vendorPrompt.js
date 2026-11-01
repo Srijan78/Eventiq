@@ -14,22 +14,7 @@ export const vendorGuidanceResponseSchema = z.object({
   ),
 });
 
-/**
- * Builds prompt and schema for vendor due-diligence guidance.
- *
- * @param {object} engineResult
- * @param {object} req
- * @returns {{ systemInstruction: string, prompt: string, responseSchema: object }}
- */
-export function buildVendorPrompt(engineResult, req) {
-  const vendorList = engineResult.vendors
-    .map(
-      (v) =>
-        `- Category ID: "${v.categoryId}", Service: "${v.label}", Priority: "${v.priority}", Book By: ${v.bookByDate}`,
-    )
-    .join('\n');
-
-  const systemInstruction = `You are Eventiq, a contract negotiation and vendor management specialist.
+const SYSTEM_INSTRUCTION = `You are Eventiq, a contract negotiation and vendor management specialist.
 Your task is to generate smart interview questions and crucial contractual red flags for key vendor categories.
 
 CRITICAL SECURITY RULES:
@@ -55,6 +40,21 @@ Return valid JSON matching this structure:
   ]
 }`;
 
+/**
+ * Builds prompt and schema for vendor due-diligence guidance.
+ *
+ * @param {object} engineResult
+ * @param {object} req
+ * @returns {{ systemInstruction: string, prompt: string, responseSchema: object }}
+ */
+export function buildVendorPrompt(engineResult, req) {
+  const vendorList = engineResult.vendors
+    .map(
+      (v) =>
+        `- Category ID: "${v.categoryId}", Service: "${v.label}", Priority: "${v.priority}", Book By: ${v.bookByDate}`,
+    )
+    .join('\n');
+
   const prompt = `Event Context:
 - Type: ${req.eventType} (${req.eventName || engineResult.profile.label})
 - Budget: ₹${req.budget.toLocaleString('en-IN')} (Feasibility: ${engineResult.budget.health.level})
@@ -72,7 +72,7 @@ Special Notes: ${req.notes || 'None'}
 Generate 2 sharp interview questions and 2 contract red flags for each vendor category ID listed above.`;
 
   return {
-    systemInstruction,
+    systemInstruction: SYSTEM_INSTRUCTION,
     prompt,
     responseSchema: vendorGuidanceResponseSchema,
   };

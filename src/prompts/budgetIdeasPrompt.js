@@ -21,19 +21,7 @@ export const budgetIdeasResponseSchema = z.object({
   }),
 });
 
-/**
- * Builds prompt and response schema for category rationale, tips, and creative ideas.
- *
- * @param {object} engineResult
- * @param {object} req
- * @returns {{ systemInstruction: string, prompt: string, responseSchema: object }}
- */
-export function buildBudgetIdeasPrompt(engineResult, req) {
-  const categoriesList = engineResult.budget.categories
-    .map((c) => `- Category ID: "${c.id}" (${c.percent}%, ₹${c.amount.toLocaleString('en-IN')})`)
-    .join('\n');
-
-  const systemInstruction = `You are Eventiq, a premier practical event planning intelligence assistant.
+const SYSTEM_INSTRUCTION = `You are Eventiq, a premier practical event planning intelligence assistant.
 Your task is to generate category rationales, tactical money-saving tips, and highly personalized creative ideas for an event.
 
 CRITICAL SECURITY RULES:
@@ -60,6 +48,18 @@ Return valid JSON matching this structure:
   }
 }`;
 
+/**
+ * Builds prompt and response schema for category rationale, tips, and creative ideas.
+ *
+ * @param {object} engineResult
+ * @param {object} req
+ * @returns {{ systemInstruction: string, prompt: string, responseSchema: object }}
+ */
+export function buildBudgetIdeasPrompt(engineResult, req) {
+  const categoriesList = engineResult.budget.categories
+    .map((c) => `- Category ID: "${c.id}" (${c.percent}%, ₹${c.amount.toLocaleString('en-IN')})`)
+    .join('\n');
+
   const prompt = `Plan Context:
 - Event Type: ${req.eventType} (${req.eventName || engineResult.profile.label})
 - Date: ${req.eventDate}
@@ -82,7 +82,7 @@ Dietary Notes: ${req.wedding?.dietary || 'None'}
 Please produce tailored rationale and actionable tips for each category ID listed above, along with curated creative concepts matching the event theme and constraints.`;
 
   return {
-    systemInstruction,
+    systemInstruction: SYSTEM_INSTRUCTION,
     prompt,
     responseSchema: budgetIdeasResponseSchema,
   };

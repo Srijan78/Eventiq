@@ -37,13 +37,57 @@ function canonicalize(obj) {
  * @param {string} [todayUtcDate] - Today's date in YYYY-MM-DD UTC
  * @returns {string} SHA-256 hex digest
  */
-export function buildCacheKey(
-  req,
-  modelName = ENV.GEMINI_MODEL || CONSTANTS.GEMINI.DEFAULT_MODEL,
-  todayUtcDate = new Date().toISOString().split('T')[0],
-) {
-  // Normalize strings (lowercased city and eventName, trimmed)
-  const normalizedForCache = {
+/**
+ * Normalizes wedding specific properties for canonical cache key.
+ *
+ * @param {object|undefined} wedding
+ * @returns {object|undefined}
+ */
+function normalizeWedding(wedding) {
+  if (!wedding) {
+    return undefined;
+  }
+  return {
+    functions: (wedding.functions || []).map((f) => String(f).toLowerCase().trim()).sort(),
+    indoor: Boolean(wedding.indoor),
+    dietary: (wedding.dietary || '').toLowerCase().trim(),
+  };
+}
+
+/**
+ * Normalizes community specific properties for canonical cache key.
+ *
+ * @param {object|undefined} community
+ * @returns {object|undefined}
+ */
+function normalizeCommunity(community) {
+  if (!community) {
+    return undefined;
+  }
+  return {
+    expectedCrowd: community.expectedCrowd,
+    sponsorshipTarget: community.sponsorshipTarget,
+    indoor: Boolean(community.indoor),
+    isPublic: community.isPublic,
+  };
+}
+
+/**
+ * Normalizes request fields for canonical cache key computation.
+ *
+ * @param {object} req
+ * @returns {object}
+ */
+function normalizeRequestForCache(req) {
+  const birthday = req.birthday
+    ? {
+        age: req.birthday.age,
+        surprise: Boolean(req.birthday.surprise),
+        indoor: Boolean(req.birthday.indoor),
+      }
+    : undefined;
+
+  return {
     eventType: req.eventType,
     eventDate: req.eventDate,
     guests: req.guests,
@@ -53,31 +97,27 @@ export function buildCacheKey(
     theme: (req.theme || '').toLowerCase().trim(),
     eventName: (req.eventName || '').toLowerCase().trim(),
     notes: (req.notes || '').trim(),
-    wedding: req.wedding
-      ? {
-          functions: (req.wedding.functions || [])
-            .map((f) => String(f).toLowerCase().trim())
-            .sort(),
-          indoor: Boolean(req.wedding.indoor),
-          dietary: (req.wedding.dietary || '').toLowerCase().trim(),
-        }
-      : undefined,
-    birthday: req.birthday
-      ? {
-          age: req.birthday.age,
-          surprise: Boolean(req.birthday.surprise),
-          indoor: Boolean(req.birthday.indoor),
-        }
-      : undefined,
-    community: req.community
-      ? {
-          expectedCrowd: req.community.expectedCrowd,
-          sponsorshipTarget: req.community.sponsorshipTarget,
-          indoor: Boolean(req.community.indoor),
-          isPublic: req.community.isPublic,
-        }
-      : undefined,
+    wedding: normalizeWedding(req.wedding),
+    birthday,
+    community: normalizeCommunity(req.community),
   };
+}
+
+/**
+ * Computes deterministic SHA-256 cache key per Section 9.7.
+ * Key depends on: canonical request, today UTC date, model name, and profile/prompt version.
+ *
+ * @param {object} req - Normalized, validated request
+ * @param {string} [modelName=CONSTANTS.GEMINI.DEFAULT_MODEL]
+ * @param {string} [todayUtcDate] - Today's date in YYYY-MM-DD UTC
+ * @returns {string} SHA-256 hex digest
+ */
+export function buildCacheKey(
+  req,
+  modelName = ENV.GEMINI_MODEL || CONSTANTS.GEMINI.DEFAULT_MODEL,
+  todayUtcDate = new Date().toISOString().split('T')[0],
+) {
+  const normalizedForCache = normalizeRequestForCache(req);
 
   const canonicalObject = {
     request: canonicalize(normalizedForCache),

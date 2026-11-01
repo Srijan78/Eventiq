@@ -3,6 +3,23 @@
  */
 
 /**
+ * Constructs structured API error from non-2xx response data.
+ *
+ * @param {Response} res
+ * @param {any} data
+ * @returns {Error}
+ */
+function buildApiError(res, data) {
+  const errPayload = data && typeof data === 'object' && data.error ? data.error : {};
+  const message = errPayload.message || `Request failed with status ${res.status}`;
+  const err = new Error(message);
+  err.code = errPayload.code || 'API_ERROR';
+  err.details = errPayload.details || [];
+  err.requestId = errPayload.requestId || '';
+  return err;
+}
+
+/**
  * Handles standard JSON fetch and extracts formatted server errors.
  *
  * @param {string} endpoint
@@ -36,12 +53,7 @@ async function fetchJson(endpoint, options = {}) {
   }
 
   if (!res.ok) {
-    const errorMsg = data?.error?.message || `Request failed with status ${res.status}`;
-    const err = new Error(errorMsg);
-    err.code = data?.error?.code || 'API_ERROR';
-    err.details = data?.error?.details || [];
-    err.requestId = data?.error?.requestId || '';
-    throw err;
+    throw buildApiError(res, data);
   }
 
   return data;

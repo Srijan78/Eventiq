@@ -5,6 +5,77 @@
 import { CONSTANTS } from '../config/constants.js';
 
 /**
+ * Normalizes allocation percentages to sum to exactly 100.
+ *
+ * @param {Array<[string, number]>} entries
+ * @returns {Record<string, number>}
+ */
+function normalizePercentages(entries) {
+  const rawSum = entries.reduce((acc, [, pct]) => acc + pct, 0);
+  const normalizedPcts = {};
+  for (const [id, pct] of entries) {
+    normalizedPcts[id] = rawSum > 0 ? (pct / rawSum) * 100 : 100 / entries.length;
+  }
+  return normalizedPcts;
+}
+
+/**
+ * Enforces mandatory contingency percentage floor across categories.
+ *
+ * @param {Record<string, number>} normalizedPcts
+ */
+function ensureContingencyFloor(normalizedPcts) {
+  const floor = CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT;
+  if (!normalizedPcts.contingency || normalizedPcts.contingency < floor) {
+    const deficit = floor - (normalizedPcts.contingency || 0);
+    normalizedPcts.contingency = floor;
+
+    const others = Object.keys(normalizedPcts).filter(
+      (k) => k !== 'contingency' && normalizedPcts[k] > 0,
+    );
+    const otherSum = others.reduce((acc, k) => acc + normalizedPcts[k], 0);
+    if (otherSum > 0) {
+      for (const k of others) {
+        normalizedPcts[k] = Math.max(
+          0,
+          normalizedPcts[k] - (deficit * normalizedPcts[k]) / otherSum,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Calculates Rupee integer amounts and distributes remainder to contingency.
+ *
+ * @param {Record<string, number>} normalizedPcts
+ * @param {number} totalBudget
+ * @returns {Array<{ id: string, percent: number, amount: number }>}
+ */
+function calculateCategoryAmounts(normalizedPcts, totalBudget) {
+  let runningSum = 0;
+  const categories = [];
+
+  for (const [id, pct] of Object.entries(normalizedPcts)) {
+    const amount = Math.floor((totalBudget * pct) / 100);
+    runningSum += amount;
+    categories.push({
+      id,
+      percent: Math.round(pct * 10) / 10,
+      amount,
+    });
+  }
+
+  const remainder = totalBudget - runningSum;
+  const targetCategory = categories.find((c) => c.id === 'contingency') || categories[0];
+  if (targetCategory) {
+    targetCategory.amount += remainder;
+  }
+
+  return categories;
+}
+
+/**
  * Reconciles budget percentages to exact rupee integer amounts.
  * Guarantees the invariant: sum(categoryAmounts) === totalBudget.
  * Any rounding remainder is allocated to the contingency reserve.
@@ -23,60 +94,10 @@ export function reconcile(totalBudget, allocationPcts) {
     throw new Error('Allocation percentages cannot be empty');
   }
 
-  // Normalize percentages so they sum to exactly 100
-  const rawSum = entries.reduce((acc, [, pct]) => acc + pct, 0);
-  const normalizedPcts = {};
-  for (const [id, pct] of entries) {
-    normalizedPcts[id] = rawSum > 0 ? (pct / rawSum) * 100 : 100 / entries.length;
-  }
+  const normalizedPcts = normalizePercentages(entries);
+  ensureContingencyFloor(normalizedPcts);
+  const categories = calculateCategoryAmounts(normalizedPcts, totalBudget);
 
-  // Ensure contingency exists and has at least the floor percentage
-  if (
-    !normalizedPcts.contingency ||
-    normalizedPcts.contingency < CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT
-  ) {
-    const deficit = CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT - (normalizedPcts.contingency || 0);
-    normalizedPcts.contingency = CONSTANTS.BUDGET.CONTINGENCY_FLOOR_PERCENT;
-    // Deduct deficit proportionally from other categories with positive allocation
-    const others = Object.keys(normalizedPcts).filter(
-      (k) => k !== 'contingency' && normalizedPcts[k] > 0,
-    );
-    const otherSum = others.reduce((acc, k) => acc + normalizedPcts[k], 0);
-    if (otherSum > 0) {
-      for (const k of others) {
-        normalizedPcts[k] = Math.max(
-          0,
-          normalizedPcts[k] - (deficit * normalizedPcts[k]) / otherSum,
-        );
-      }
-    }
-  }
-
-  // Compute base rupee amounts using Math.floor
-  let runningSum = 0;
-  const categories = [];
-
-  for (const [id, pct] of Object.entries(normalizedPcts)) {
-    const amount = Math.floor((totalBudget * pct) / 100);
-    runningSum += amount;
-    categories.push({
-      id,
-      percent: Math.round(pct * 10) / 10,
-      amount,
-    });
-  }
-
-  // Allocate rounding remainder to contingency
-  const remainder = totalBudget - runningSum;
-  const contingencyCategory = categories.find((c) => c.id === 'contingency');
-  if (contingencyCategory) {
-    contingencyCategory.amount += remainder;
-  } else {
-    // If no contingency category, add to the first category
-    categories[0].amount += remainder;
-  }
-
-  // Re-verify invariant
   const finalSum = categories.reduce((acc, c) => acc + c.amount, 0);
   if (finalSum !== totalBudget) {
     throw new Error(`Budget reconciliation invariant failed: sum ${finalSum} !== ${totalBudget}`);

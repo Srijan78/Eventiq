@@ -28,6 +28,40 @@ export function buildHealthMeter(health) {
 }
 
 /**
+ * Creates a single table row for a budget category.
+ *
+ * @param {object} cat
+ * @returns {HTMLTableRowElement}
+ */
+function createBudgetRow(cat) {
+  const row = el('tr');
+  row.setAttribute('data-cat-id', cat.id);
+  const tdName = el('td', 'cat-name', cat.label || cat.id);
+  tdName.setAttribute('scope', 'row');
+
+  const tdPct = el('td', 'cat-pct', `${cat.percent}%`);
+  const tdAmt = el('td', 'cat-amt', `₹${cat.amount.toLocaleString('en-IN')}`);
+
+  const tdGuidance = el('td', 'cat-guidance');
+  if (cat.rationale) {
+    tdGuidance.appendChild(el('p', 'cat-rationale', cat.rationale));
+  }
+  if (cat.tips && cat.tips.length > 0) {
+    const tipsList = el('ul', 'cat-tips-list');
+    for (const t of cat.tips) {
+      tipsList.appendChild(el('li', '', t));
+    }
+    tdGuidance.appendChild(tipsList);
+  }
+
+  row.appendChild(tdName);
+  row.appendChild(tdPct);
+  row.appendChild(tdAmt);
+  row.appendChild(tdGuidance);
+  return row;
+}
+
+/**
  * Builds the accessible budget breakdown table.
  *
  * @param {Array<object>} categories - Budget categories
@@ -55,31 +89,7 @@ export function buildBudgetTable(categories) {
 
   const tbody = el('tbody');
   for (const cat of categories) {
-    const row = el('tr');
-    row.setAttribute('data-cat-id', cat.id);
-    const tdName = el('td', 'cat-name', cat.label || cat.id);
-    tdName.setAttribute('scope', 'row');
-
-    const tdPct = el('td', 'cat-pct', `${cat.percent}%`);
-    const tdAmt = el('td', 'cat-amt', `₹${cat.amount.toLocaleString('en-IN')}`);
-
-    const tdGuidance = el('td', 'cat-guidance');
-    if (cat.rationale) {
-      tdGuidance.appendChild(el('p', 'cat-rationale', cat.rationale));
-    }
-    if (cat.tips && cat.tips.length > 0) {
-      const tipsList = el('ul', 'cat-tips-list');
-      for (const t of cat.tips) {
-        tipsList.appendChild(el('li', '', t));
-      }
-      tdGuidance.appendChild(tipsList);
-    }
-
-    row.appendChild(tdName);
-    row.appendChild(tdPct);
-    row.appendChild(tdAmt);
-    row.appendChild(tdGuidance);
-    tbody.appendChild(row);
+    tbody.appendChild(createBudgetRow(cat));
   }
 
   table.appendChild(tbody);

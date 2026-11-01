@@ -64,6 +64,58 @@ function getActiveAllocation(profile, req) {
 }
 
 /**
+ * Merges allocation shifts, warnings, tasks, and risks into accumulator state.
+ *
+ * @param {object} state
+ * @param {object} output
+ */
+function accumulateRuleArtifacts(state, output) {
+  if (output.allocationShifts) {
+    for (const [cat, shift] of Object.entries(output.allocationShifts)) {
+      state.accumulatedShifts[cat] = (state.accumulatedShifts[cat] || 0) + shift;
+    }
+  }
+  if (output.warnings) {
+    state.warnings.push(...output.warnings);
+  }
+  if (output.priorityFlags) {
+    state.priorityFlags.push(...output.priorityFlags);
+  }
+  if (output.extraTasks) {
+    state.extraTasks.push(...output.extraTasks);
+  }
+  if (output.risks) {
+    state.risks.push(...output.risks);
+  }
+  if (output.budgetHealth) {
+    state.evaluatedHealth = output.budgetHealth;
+  }
+}
+
+/**
+ * Applies single rule output into the execution state accumulator.
+ *
+ * @param {object} state
+ * @param {object} output
+ * @param {object} rule
+ * @param {string} defaultPrefix
+ */
+function applyRuleOutput(state, output, rule, defaultPrefix) {
+  const effectText =
+    output.warnings && output.warnings.length > 0
+      ? output.warnings.join(' ')
+      : output.effect || `${defaultPrefix} ${rule.description}.`;
+
+  state.firedRules.push({
+    id: rule.id,
+    description: rule.description,
+    effect: effectText,
+  });
+
+  accumulateRuleArtifacts(state, output);
+}
+
+/**
  * Executes a sequence of rule objects and updates accumulator state.
  *
  * @param {ReadonlyArray<object>} rules - Rule objects
@@ -73,41 +125,9 @@ function getActiveAllocation(profile, req) {
  */
 function executeRuleSet(rules, context, state, defaultPrefix) {
   for (const rule of rules) {
-    if (!rule.applies(context)) {
-      continue;
-    }
-
-    const output = rule.apply(context);
-    const effectText =
-      output.warnings && output.warnings.length > 0
-        ? output.warnings.join(' ')
-        : output.effect || `${defaultPrefix} ${rule.description}.`;
-
-    state.firedRules.push({
-      id: rule.id,
-      description: rule.description,
-      effect: effectText,
-    });
-
-    if (output.allocationShifts) {
-      for (const [cat, shift] of Object.entries(output.allocationShifts)) {
-        state.accumulatedShifts[cat] = (state.accumulatedShifts[cat] || 0) + shift;
-      }
-    }
-    if (output.warnings) {
-      state.warnings.push(...output.warnings);
-    }
-    if (output.priorityFlags) {
-      state.priorityFlags.push(...output.priorityFlags);
-    }
-    if (output.extraTasks) {
-      state.extraTasks.push(...output.extraTasks);
-    }
-    if (output.risks) {
-      state.risks.push(...output.risks);
-    }
-    if (output.budgetHealth) {
-      state.evaluatedHealth = output.budgetHealth;
+    if (rule.applies(context)) {
+      const output = rule.apply(context);
+      applyRuleOutput(state, output, rule, defaultPrefix);
     }
   }
 }
@@ -115,15 +135,10 @@ function executeRuleSet(rules, context, state, defaultPrefix) {
 /**
  * Reconciles category shifts and calculates exact Rupee amounts.
  *
- * @param {object} profile - Event profile
- * @param {number} totalBudget - Total budget amount
- * @param {Record<string, number>} baseAllocation - Base percentage map
- * @param {Record<string, number>} shifts - Accumulated percentage shifts
- * @param {object} health - Evaluated health structure
- * @param {number} perGuest - Raw spend per guest
+ * @param {{ profile: object, totalBudget: number, baseAllocation: Record<string, number>, shifts: Record<string, number>, health: object, perGuest: number }} params
  * @returns {object} Final budget object
  */
-function buildPlanBudget(profile, totalBudget, baseAllocation, shifts, health, perGuest) {
+function buildPlanBudget({ profile, totalBudget, baseAllocation, shifts, health, perGuest }) {
   const rawAdjusted = { ...baseAllocation };
   for (const [cat, shift] of Object.entries(shifts)) {
     if (rawAdjusted[cat] !== undefined) {
@@ -156,14 +171,10 @@ function buildPlanBudget(profile, totalBudget, baseAllocation, shifts, health, p
 /**
  * Builds vendor guidance list with priority flags and dates.
  *
- * @param {object} profile - Event profile
- * @param {Date} eventDate - Event date
- * @param {Date} today - Current reference date
- * @param {string[]} priorityFlags - Category IDs flagged for urgent booking
- * @param {number} weeksToEvent - Weeks remaining
+ * @param {{ profile: object, eventDate: Date, today: Date, priorityFlags: string[], weeksToEvent: number }} params
  * @returns {object[]} Vendor guidance list
  */
-function buildPlanVendors(profile, eventDate, today, priorityFlags, weeksToEvent) {
+function buildPlanVendors({ profile, eventDate, today, priorityFlags, weeksToEvent }) {
   return profile.vendorCategories.map((vc) => {
     const isPriority =
       priorityFlags.includes(vc.id) || weeksToEvent <= CONSTANTS.TIMELINE.URGENT_WEEKS;
@@ -215,6 +226,57 @@ function selectTopRisks(risks) {
   return sorted;
 }
 
+const DEFAULT_IDEAS = Object.freeze({
+  themes: ['Contemporary Classic'],
+  activities: ['Celebration Toast'],
+  menu: ['Seasonal Platter'],
+  decor: ['Atmospheric Lighting'],
+  extras: ['Guest Welcome Card'],
+});
+
+/**
+ * Assembles final engine results from evaluated state.
+ *
+ * @param {{ profile: object, context: object, state: object, activeAllocation: Record<string, number>, validatedRequest: object }} params
+ * @returns {object}
+ */
+function assemblePlanOutputs({ profile, context, state, activeAllocation, validatedRequest }) {
+  const budget = buildPlanBudget({
+    profile,
+    totalBudget: validatedRequest.budget,
+    baseAllocation: activeAllocation,
+    shifts: state.accumulatedShifts,
+    health: state.evaluatedHealth,
+    perGuest: context.perGuest,
+  });
+  const timeline = buildTimeline(
+    profile.timelineMilestones,
+    validatedRequest.eventDate,
+    context.today,
+    state.extraTasks,
+  );
+  const vendors = buildPlanVendors({
+    profile,
+    eventDate: context.eventDate,
+    today: context.today,
+    priorityFlags: state.priorityFlags,
+    weeksToEvent: context.weeksToEvent,
+  });
+  const risks = selectTopRisks(state.risks);
+
+  return {
+    profile,
+    context,
+    budget,
+    timeline,
+    vendors,
+    ideas: profile.templates?.ideas || DEFAULT_IDEAS,
+    warnings: Array.from(new Set(state.warnings)),
+    risks,
+    firedRules: state.firedRules,
+  };
+}
+
 /**
  * Runs the full deterministic decision engine pipeline.
  * Target: under 40 lines.
@@ -245,44 +307,5 @@ export function runEngine(validatedRequest, referenceDate = new Date()) {
     state.evaluatedHealth = computeHealth(context.perGuest, context.costLevel, context.bands);
   }
 
-  const budget = buildPlanBudget(
-    profile,
-    validatedRequest.budget,
-    activeAllocation,
-    state.accumulatedShifts,
-    state.evaluatedHealth,
-    context.perGuest,
-  );
-  const timeline = buildTimeline(
-    profile.timelineMilestones,
-    validatedRequest.eventDate,
-    context.today,
-    state.extraTasks,
-  );
-  const vendors = buildPlanVendors(
-    profile,
-    context.eventDate,
-    context.today,
-    state.priorityFlags,
-    context.weeksToEvent,
-  );
-  const risks = selectTopRisks(state.risks);
-
-  return {
-    profile,
-    context,
-    budget,
-    timeline,
-    vendors,
-    ideas: profile.templates?.ideas || {
-      themes: ['Contemporary Classic'],
-      activities: ['Celebration Toast'],
-      menu: ['Seasonal Platter'],
-      decor: ['Atmospheric Lighting'],
-      extras: ['Guest Welcome Card'],
-    },
-    warnings: Array.from(new Set(state.warnings)),
-    risks,
-    firedRules: state.firedRules,
-  };
+  return assemblePlanOutputs({ profile, context, state, activeAllocation, validatedRequest });
 }
