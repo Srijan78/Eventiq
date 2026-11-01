@@ -8,10 +8,10 @@
     "start": "node src/server.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "node --test tests/unit tests/integration",
+    "test": "node --test tests/unit/*.test.js tests/integration/*.test.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:coverage": "node --test --experimental-test-coverage tests/unit tests/integration"
+    "test:coverage": "node --test --experimental-test-coverage tests/unit/*.test.js tests/integration/*.test.js"
   },
   "engines": {
     "node": ">=20.0.0"
