@@ -4,6 +4,7 @@
 
 import { ZodError } from 'zod';
 import { logger } from '../utils/logger.js';
+import { AppError } from '../utils/AppError.js';
 
 /**
  * Maps Zod issues to a friendly readable summary message.
@@ -100,6 +101,21 @@ function resolveClientError(err, requestId) {
     };
   }
 
+  if (err instanceof AppError && err.status < 500) {
+    logger.warn({ requestId, code: err.code, err: err.message }, 'Client application error');
+    return {
+      status: err.status,
+      body: {
+        error: {
+          code: err.code,
+          message: err.message,
+          details: err.details,
+          requestId,
+        },
+      },
+    };
+  }
+
   return null;
 }
 
@@ -111,6 +127,20 @@ function resolveClientError(err, requestId) {
  * @returns {{ status: number, body: object } | null}
  */
 function resolveSpecialServerStatus(err, requestId) {
+  if (err instanceof AppError && err.status >= 500) {
+    logger.error({ requestId, code: err.code, err: err.message }, 'Server application error');
+    return {
+      status: err.status,
+      body: {
+        error: {
+          code: err.code,
+          message: err.message,
+          details: err.details,
+          requestId,
+        },
+      },
+    };
+  }
   if (err.status === 429) {
     return {
       status: 429,

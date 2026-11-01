@@ -3,6 +3,7 @@
  */
 
 import { generateIcs } from '../utils/ics.js';
+import { AppError } from '../utils/AppError.js';
 
 export const exportController = Object.freeze({
   /**
@@ -15,14 +16,11 @@ export const exportController = Object.freeze({
     try {
       const { timeline, eventName } = req.body || {};
       if (!Array.isArray(timeline) || timeline.length === 0) {
-        return res.status(400).json({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Timeline array with at least one milestone is required for ICS export',
-            details: [],
-            requestId: req.id || '',
-          },
-        });
+        throw new AppError(
+          'Timeline array with at least one milestone is required for ICS export',
+          400,
+          'VALIDATION_ERROR',
+        );
       }
 
       const icsData = generateIcs(timeline, eventName || 'Eventiq Plan');

@@ -7,84 +7,81 @@ const STORAGE_KEYS = Object.freeze({
   CHECKLIST_PREFIX: 'eventiq_checklist_',
 });
 
+function safeGet(key, fallback = null) {
+  try {
+    return localStorage.getItem(key);
+  } catch (err) {
+    void err;
+    return fallback;
+  }
+}
+
+function safeSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (err) {
+    void err;
+    return false;
+  }
+}
+
+function safeRemove(key) {
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch (err) {
+    void err;
+    return false;
+  }
+}
+
 export const stateManager = Object.freeze({
-  /**
-   * Persists the active plan and original request to localStorage.
-   *
-   * @param {object} request
-   * @param {object} plan
-   */
   savePlan(request, plan) {
-    try {
-      const payload = {
-        request,
-        plan,
-        savedAt: new Date().toISOString(),
-      };
-      localStorage.setItem(STORAGE_KEYS.CURRENT_PLAN, JSON.stringify(payload));
-    } catch {
-      // Gracefully handle storage quota or private-browsing restrictions
-    }
+    const payload = {
+      request,
+      plan,
+      savedAt: new Date().toISOString(),
+    };
+    safeSet(STORAGE_KEYS.CURRENT_PLAN, JSON.stringify(payload));
   },
 
-  /**
-   * Retrieves the previously stored plan session.
-   * @returns {{ request: object, plan: object, savedAt: string } | null}
-   */
   loadSavedPlan() {
+    const raw = safeGet(STORAGE_KEYS.CURRENT_PLAN);
+    if (!raw) {
+      return null;
+    }
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.CURRENT_PLAN);
-      if (!raw) {
-        return null;
-      }
       return JSON.parse(raw);
-    } catch {
+    } catch (err) {
+      void err;
       return null;
     }
   },
 
-  /**
-   * Clears the saved session from localStorage.
-   */
   clearSavedPlan() {
-    try {
-      localStorage.removeItem(STORAGE_KEYS.CURRENT_PLAN);
-    } catch {
-      // ignore
-    }
+    safeRemove(STORAGE_KEYS.CURRENT_PLAN);
   },
 
-  /**
-   * Saves checked item IDs for a specific plan's vendor checklist.
-   *
-   * @param {string} planId
-   * @param {Record<string, boolean>} checkedMap
-   */
   saveChecklist(planId, checkedMap) {
     if (!planId) {
       return;
     }
-    try {
-      localStorage.setItem(`${STORAGE_KEYS.CHECKLIST_PREFIX}${planId}`, JSON.stringify(checkedMap));
-    } catch {
-      // ignore
-    }
+    safeSet(`${STORAGE_KEYS.CHECKLIST_PREFIX}${planId}`, JSON.stringify(checkedMap));
   },
 
-  /**
-   * Loads the checked item states for a given plan ID.
-   *
-   * @param {string} planId
-   * @returns {Record<string, boolean>}
-   */
   loadChecklist(planId) {
     if (!planId) {
       return {};
     }
+    const raw = safeGet(`${STORAGE_KEYS.CHECKLIST_PREFIX}${planId}`);
+    if (!raw) {
+      return {};
+    }
     try {
-      const raw = localStorage.getItem(`${STORAGE_KEYS.CHECKLIST_PREFIX}${planId}`);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
+      return JSON.parse(raw);
+    } catch (err) {
+      void err;
       return {};
     }
   },
