@@ -31,5 +31,5 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-      - name: Run test suite
-        run: npm test
+      - name: Run test suite with coverage
+        run: npm run test:coverage
