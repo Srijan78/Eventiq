@@ -3,6 +3,7 @@
  */
 
 import { postWhatIf } from './api.js';
+import { LIMITS } from './shared/limits.js';
 
 /**
  * Creates a labeled numeric input control.
@@ -109,15 +110,15 @@ export function initWhatIfControls(plan, container, onRecalculated) {
     id: 'whatif-guests',
     labelText: 'Adjust Guests:',
     value: plan.request.guests,
-    min: 1,
-    max: 5000,
+    min: LIMITS.GUESTS.MIN,
+    max: LIMITS.GUESTS.MAX,
   });
   const { group: budgetGroup, input: budgetInput } = createNumberControl({
     id: 'whatif-budget',
     labelText: 'Adjust Total Budget (₹):',
     value: plan.request.budget,
-    min: 1000,
-    max: 100000000,
+    min: LIMITS.BUDGET.MIN,
+    max: LIMITS.BUDGET.MAX,
     step: 500,
   });
 

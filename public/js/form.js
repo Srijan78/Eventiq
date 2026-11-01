@@ -2,6 +2,8 @@
  * @fileoverview Form validation, dynamic field switching, and payload extraction.
  */
 
+import { LIMITS } from './shared/limits.js';
+
 /**
  * Toggles visibility of dynamic event-specific fieldsets.
  * @param {string} eventType
@@ -137,14 +139,20 @@ function validateEventDate(dateInput) {
 function validateNumericBounds(guestsInput, budgetInput) {
   let valid = true;
   const guests = parseInt(guestsInput?.value, 10);
-  if (isNaN(guests) || guests < 1 || guests > 5000) {
-    setFieldError(guestsInput, 'Guest count must be between 1 and 5,000.');
+  if (isNaN(guests) || guests < LIMITS.GUESTS.MIN || guests > LIMITS.GUESTS.MAX) {
+    setFieldError(
+      guestsInput,
+      `Guest count must be between ${LIMITS.GUESTS.MIN} and ${LIMITS.GUESTS.MAX.toLocaleString('en-IN')}.`,
+    );
     valid = false;
   }
 
   const budget = parseInt(budgetInput?.value, 10);
-  if (isNaN(budget) || budget < 1000 || budget > 100000000) {
-    setFieldError(budgetInput, 'Total budget must be between ₹1,000 and ₹10,00,00,000.');
+  if (isNaN(budget) || budget < LIMITS.BUDGET.MIN || budget > LIMITS.BUDGET.MAX) {
+    setFieldError(
+      budgetInput,
+      `Total budget must be between ₹${LIMITS.BUDGET.MIN.toLocaleString('en-IN')} and ₹${LIMITS.BUDGET.MAX.toLocaleString('en-IN')}.`,
+    );
     valid = false;
   }
   return valid;
